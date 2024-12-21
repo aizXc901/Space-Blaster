@@ -1,5 +1,7 @@
 import pygame
 import random
+import os
+import sys
 
 # Constants for the game
 WIDTH = 1000
@@ -14,7 +16,7 @@ GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 
-# Initialize the game and create a window
+# Initialize the game
 pygame.init()
 pygame.mixer.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -22,17 +24,29 @@ pygame.display.set_caption("Blaster")
 clock = pygame.time.Clock()
 
 
+def load_image(name):
+    fullname = os.path.join('sprites', name)
+    if not os.path.isfile(fullname):
+        print(f"Image file '{fullname}' not found.")
+        sys.exit()
+    return pygame.image.load(fullname)
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.Surface((50, 40))
-        self.image.fill(GREEN)
+        original_image = load_image("cosmo.jpg")
+
+        # Scale the image to be half the original size
+        self.image = pygame.transform.scale(original_image,
+                                            (original_image.get_width() // 10, original_image.get_height() // 10))
         self.rect = self.image.get_rect()
-        self.rect.centerx = WIDTH / 2
-        self.rect.bottom = HEIGHT - 10
+        self.rect.center = (WIDTH // 2, HEIGHT // 2)
         self.speedx = 0
         self.speedy = 0
+
     def update(self):
+        """Update the player's position based on input."""
         self.speedx = 0
         self.speedy = 0
         keystate = pygame.key.get_pressed()
@@ -40,50 +54,48 @@ class Player(pygame.sprite.Sprite):
             self.speedx = -8
         if keystate[pygame.K_RIGHT]:
             self.speedx = 8
-
-        # Correct handling of up/down movement
         if keystate[pygame.K_UP]:
             self.speedy = -8
         if keystate[pygame.K_DOWN]:
             self.speedy = 8
 
+        # Move the sprite
         self.rect.x += self.speedx
         self.rect.y += self.speedy
 
-        # Keep player on screen
-        if self.rect.right > WIDTH:
-            self.rect.right = WIDTH
+        # Keep player within screen limits
         if self.rect.left < 0:
             self.rect.left = 0
-        if self.rect.bottom > HEIGHT:
-            self.rect.bottom = HEIGHT
+        if self.rect.right > WIDTH:
+            self.rect.right = WIDTH
         if self.rect.top < 0:
             self.rect.top = 0
+        if self.rect.bottom > HEIGHT:
+            self.rect.bottom = HEIGHT
 
 
-# Create sprite groups
-all_sprites = pygame.sprite.Group()
-player = Player()
-all_sprites.add(player)
+# Main game loop
+def main():
+    all_sprites = pygame.sprite.Group()
+    player = Player()
+    all_sprites.add(player)
 
-# Game loop
-running = True
-while running:
-    # Keep the loop running at the right speed
-    clock.tick(FPS)
+    running = True
+    while running:
+        clock.tick(FPS)
 
-    # Process events (input)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 
-    # Update
-    all_sprites.update()
+        all_sprites.update()
 
-    # Draw / render
-    screen.fill(BLACK)  # Clear the screen
-    all_sprites.draw(screen)  # Draw all sprites
-    pygame.display.flip()  # Flip the display
+        screen.fill(BLACK)
+        all_sprites.draw(screen)
+        pygame.display.flip()
 
-# Quit the game
-pygame.quit()
+    pygame.quit()
+
+
+if __name__ == "__main__":
+    main()
