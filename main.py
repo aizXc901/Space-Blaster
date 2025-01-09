@@ -21,63 +21,75 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Space Blaster")
 clock = pygame.time.Clock()
 
+# Игрок (прямоугольник)
+player_rect = pygame.Rect(WIDTH // 4, HEIGHT - 270, 50, 50)
 
-class Player(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.image = pygame.Surface((50, 50), pygame.SRCALPHA)
-        pygame.draw.rect(self.image, GREEN, (0, 0, 50, 50), 2)
-        self.rect = self.image.get_rect()
-        self.rect.centerx = WIDTH / 4
-        self.rect.bottom = HEIGHT - 270
-        self.speedx = 0
-        self.speedy = 0
-# движение игрока (стрелочки)
-    def update(self):
-        self.speedx = 0
-        self.speedy = 0
-        keystate = pygame.key.get_pressed()
-        if keystate[pygame.K_LEFT]:
-            self.speedx = -4
-        if keystate[pygame.K_RIGHT]:
-            self.speedx = 4
-        if keystate[pygame.K_UP]:
-            self.speedy = -4
-        if keystate[pygame.K_DOWN]:
-            self.speedy = 4
+# Враги (красные квадраты)
+enemies = []
 
-        self.rect.x += self.speedx
-        self.rect.y += self.speedy
+# Добавляем врагов, которые будут двигаться справа налево
+for i in range(5):  # создадим 5 врагов
+    enemy_rect = pygame.Rect(WIDTH - random.randint(50, 150), random.randint(50, HEIGHT - 50), 40, 40)
+    enemies.append(enemy_rect)
 
-        # Сохраняем игрока на экране
-        if self.rect.right > WIDTH:
-            self.rect.right = WIDTH
-        if self.rect.left < 0:
-            self.rect.left = 0
-        if self.rect.bottom > HEIGHT:
-            self.rect.bottom = HEIGHT
-        if self.rect.top < 0:
-            self.rect.top = 0
-
-all_sprites = pygame.sprite.Group()
-player = Player()
-all_sprites.add(player)
-
-# enemy (пока неподвижен)
-rectangle_surface = pygame.Surface((40, 40), pygame.SRCALPHA)
-pygame.draw.rect(rectangle_surface, RED, (0, 0, 40, 40), 2)
-rectangle = pygame.Rect(WIDTH // 2, HEIGHT // 2, 2, 2)
+# Стенка (вертикальная)
+wall_rect = pygame.Rect(WIDTH // 2, 0, 20, HEIGHT)  # вертикальная стенка в центре экрана
 
 running = True
 while running:
     clock.tick(FPS)
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    all_sprites.update()
+
+    # Обновляем положение врагов (движутся только по горизонтали, справа налево)
+    for enemy_rect in enemies:
+        enemy_rect.x -= random.randint(1, 1)  # случайная скорость по горизонтали
+
+        # Если враг выходит за пределы экрана, возвращаем его в правую часть
+        if enemy_rect.right < 0:
+            enemy_rect.left = WIDTH  # враг появляется справа случайно
+
+    # Получаем состояние клавиш
+    keystate = pygame.key.get_pressed()
+
+    # Управление игроком (стрелочки)
+    player_speed = 4
+    if keystate[pygame.K_LEFT]:
+        player_rect.x -= player_speed
+    if keystate[pygame.K_RIGHT]:
+        player_rect.x += player_speed
+    if keystate[pygame.K_UP]:
+        player_rect.y -= player_speed
+    if keystate[pygame.K_DOWN]:
+        player_rect.y += player_speed
+
+    # Ограничение движения игрока на экране
+    if player_rect.right > WIDTH:
+        player_rect.right = WIDTH
+    if player_rect.left < 0:
+        player_rect.left = 0
+    if player_rect.bottom > HEIGHT:
+        player_rect.bottom = HEIGHT
+    if player_rect.top < 0:
+        player_rect.top = 0
+
+    # Заполняем экран фоном
     screen.fill(DARK_BLUE)
-    all_sprites.draw(screen)
-    screen.blit(rectangle_surface, rectangle)
+
+    # Рисуем игрока
+    pygame.draw.rect(screen, GREEN, player_rect)
+
+    # Рисуем врагов (красные квадраты)
+    for enemy_rect in enemies:
+        pygame.draw.rect(screen, RED, enemy_rect)
+
+    # Рисуем стенку
+    pygame.draw.rect(screen, YELLOW, wall_rect)  # Вертикальная стенка
+
+    # Обновляем экран
     pygame.display.flip()
 
 pygame.quit()
+
