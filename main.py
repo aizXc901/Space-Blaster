@@ -37,6 +37,10 @@ wall_rect = pygame.Rect(WIDTH // 2, 0, 20, HEIGHT)
 # Переменная для видимости стенки
 wall_visible = True
 
+# снаряды игрока
+bullets = []
+BULLET_SPEED = 5
+
 # cостояние игры (True=основной экран, False=пауза)
 game_active = True
 
@@ -51,6 +55,10 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 game_active = not game_active  # состояние игры
+            # стрельба пробелом
+            if event.key == pygame.K_SPACE and game_active:
+                bullet_rect = pygame.Rect(player_rect.right, player_rect.centery - 5, 20, 10)
+                bullets.append(bullet_rect)
 
     if game_active:
         # update Enemy (движутся right to left)
@@ -96,6 +104,20 @@ while running:
             if keystate[pygame.K_RIGHT]:  # if движение вправо, отменяем
                 player_rect.x -= player_speed
 
+        # update bullets
+        for bullet in bullets[:]:
+            bullet.x += BULLET_SPEED
+            if bullet.left > WIDTH:  # удаляем снаряды, вышедшие за экран
+                bullets.remove(bullet)
+
+        # check bullet collisions
+        for bullet in bullets[:]:
+            for enemy in enemies[:]:
+                if bullet.colliderect(enemy):
+                    bullets.remove(bullet)
+                    enemies.remove(enemy)
+                    break
+
         # Заполняем экран фоном
         screen.fill(DARK_BLUE)
         # Рисуем игрока (зеленый квадрат)
@@ -103,6 +125,9 @@ while running:
         # Рисуем врагов (красные квадраты)
         for enemy_rect in enemies:
             pygame.draw.rect(screen, RED, enemy_rect)
+        # Рисуем снаряды (желтые прямоугольники)
+        for bullet in bullets:
+            pygame.draw.rect(screen, YELLOW, bullet)
         pygame.draw.rect(screen, YELLOW, wall_rect)
     else:
         # if Pause=black screen
