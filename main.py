@@ -51,7 +51,6 @@ game_active = True
 # Размер для спрайта жизни
 life_icon_width = 30
 life_icon_height = 30
-
 # время через которое Enemy is removed после столкновения со стенкой (сек)
 COLLISION_TIME = 3
 
