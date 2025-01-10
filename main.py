@@ -1,5 +1,6 @@
 import pygame
 import random
+import time
 
 # всякое для игры
 WIDTH = 960
@@ -29,7 +30,7 @@ enemies = []
 # враги, движение влево
 for i in range(5):  # создадим 5 врагов
     enemy_rect = pygame.Rect(WIDTH - random.randint(50, 150), random.randint(50, HEIGHT - 50), 40, 40)
-    enemies.append(enemy_rect)
+    enemies.append({'rect': enemy_rect, 'time_collided': None, 'collision_timer': 3})  # добавляем таймер
 
 # стенка (вертикальная)
 wall_rect = pygame.Rect(WIDTH // 2, 0, 20, HEIGHT)
@@ -37,8 +38,22 @@ wall_rect = pygame.Rect(WIDTH // 2, 0, 20, HEIGHT)
 # Переменная для видимости стенки
 wall_visible = True
 
+# снаряды игрока
+bullets = []
+BULLET_SPEED = 5
+
+# количество жизней игрока
+lives = 3
+
 # cостояние игры (True=основной экран, False=пауза)
 game_active = True
+
+# Размер для спрайта жизни
+life_icon_width = 30
+life_icon_height = 30
+
+# время, через которое враг исчезает после столкновения (в секундах)
+COLLISION_TIME = 3  # 3 секунды
 
 running = True
 while running:
@@ -51,17 +66,43 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 game_active = not game_active  # состояние игры
+            # стрельба пробелом
+            if event.key == pygame.K_SPACE and game_active:
+                bullet_rect = pygame.Rect(player_rect.right, player_rect.centery - 5, 20, 10)
+                bullets.append(bullet_rect)
 
     if game_active:
         # update Enemy (движутся right to left)
-        for enemy_rect in enemies:
+        for enemy in enemies[:]:
+            enemy_rect = enemy['rect']
+            enemy_speed = random.uniform(0.5, 1.0)  # случайная скорость врагов от 0.5 до 1.0
+
             # check не столкнулся ли Enemy со стенкой
             if enemy_rect.colliderect(wall_rect) and wall_visible:
-                enemy_rect.x += 1  # if Enemy столкнулся с стенкой, не двигается дальше
-            else:
-                enemy_rect.x -= random.randint(1, 2)  # Enemy двигается влево
+                # если Enemy столкнулся с стенкой, начинаем отсчет
+                if enemy['time_collided'] is None:  # check было или нет уже столкновения
+                    enemy['time_collided'] = time.time()  # write время столкновения
 
-            # if Enemy выходит за экран, возвращаем в правую часть
+            # if Enemy столкнулся со стенкой и прошло достаточно времени, remove
+            if enemy['time_collided'] is not None:
+                # upd таймер для Enemy
+                elapsed_time = time.time() - enemy['time_collided']
+                remaining_time = COLLISION_TIME - elapsed_time
+                enemy['collision_timer'] = max(0, remaining_time)  # время до remove Enemy
+
+                # if прошло больше времени, чем COLLISION_TIME, снимаем жизнь и remove Enemy
+                if elapsed_time > COLLISION_TIME:
+                    if lives > 0:
+                        lives -= 1  # снимаем жизнь
+                    enemies.remove(enemy)  # remove врага
+
+            # враг двигается влево с плавной скоростью, если не столкнулся со стенкой
+            if enemy_rect.colliderect(wall_rect) and wall_visible:
+                enemy_rect.x += 1  # если враг столкнулся с стенкой, не двигается дальше
+            else:
+                enemy_rect.x -= enemy_speed  # враг двигается влево
+
+            # если враг выходит за экран, возвращаем его в правую часть
             if enemy_rect.right < 0:
                 enemy_rect.left = WIDTH
 
@@ -90,22 +131,50 @@ while running:
             player_rect.top = 0
 
         # block Player movement
-        if player_rect.colliderect(wall_rect) and wall_visible:  # if Player столкнулся со стенкой
-            if keystate[pygame.K_LEFT]:  # if движение влево, отменяем
+        if player_rect.colliderect(wall_rect) and wall_visible:  # если игрок столкнулся со стенкой
+            if keystate[pygame.K_LEFT]:  # если движение влево, отменяем
                 player_rect.x += player_speed
-            if keystate[pygame.K_RIGHT]:  # if движение вправо, отменяем
+            if keystate[pygame.K_RIGHT]:  # если движение вправо, отменяем
                 player_rect.x -= player_speed
+
+        # обновляем пули
+        for bullet in bullets[:]:
+            bullet.x += BULLET_SPEED
+            if bullet.left > WIDTH:  # удаляем пули, которые вышли за экран
+                bullets.remove(bullet)
+
+        # проверка столкновений пуль с врагами
+        for bullet in bullets[:]:
+            for enemy in enemies[:]:
+                if bullet.colliderect(enemy['rect']):
+                    bullets.remove(bullet)
+                    enemies.remove(enemy)
+                    break
 
         # Заполняем экран фоном
         screen.fill(DARK_BLUE)
         # Рисуем игрока (зеленый квадрат)
         pygame.draw.rect(screen, GREEN, player_rect)
         # Рисуем врагов (красные квадраты)
-        for enemy_rect in enemies:
-            pygame.draw.rect(screen, RED, enemy_rect)
+        for enemy in enemies:
+            pygame.draw.rect(screen, RED, enemy['rect'])
+            # таймер отображаемый для Enemy (по истечении Enemy они наносят урон)
+            font = pygame.font.Font(None, 30)
+            timer_text = font.render(f"{int(enemy['collision_timer'])}", True, WHITE)
+            screen.blit(timer_text, (enemy['rect'].x + 10, enemy['rect'].y - 20))
+
+        # Рисуем снаряды (желтые прямоугольники)
+        for bullet in bullets:
+            pygame.draw.rect(screen, YELLOW, bullet)
         pygame.draw.rect(screen, YELLOW, wall_rect)
+
+        # добавила жизни для Player
+        for i in range(lives):
+            pygame.draw.rect(screen, GREEN,
+                             pygame.Rect(10 + i * (life_icon_width + 5), 10, life_icon_width, life_icon_height))
+
     else:
-        # if Pause=black screen
+        # если игра на паузе — черный экран
         screen.fill(BLACK)
         font = pygame.font.Font(None, 40)
         text = font.render('PAUSED - Press Esc to resume', True, WHITE)
