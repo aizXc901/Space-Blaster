@@ -38,11 +38,11 @@ wall_rect = pygame.Rect(WIDTH // 2, 0, 20, HEIGHT)
 # Переменная для видимости стенки
 wall_visible = True
 
-# снаряды игрока
+# снаряды Player
 bullets = []
 BULLET_SPEED = 5
 
-# количество жизней игрока
+# количество жизней Player
 lives = 3
 
 # cостояние игры (True=основной экран, False=пауза)
@@ -52,8 +52,8 @@ game_active = True
 life_icon_width = 30
 life_icon_height = 30
 
-# время, через которое враг исчезает после столкновения (в секундах)
-COLLISION_TIME = 3  # 3 секунды
+# время через которое Enemy is removed после столкновения со стенкой (сек)
+COLLISION_TIME = 3
 
 running = True
 while running:
