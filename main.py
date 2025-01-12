@@ -5,7 +5,7 @@ import time
 # всякое для игры
 WIDTH = 960
 HEIGHT = 540
-FPS = 200
+FPS = 180
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
@@ -13,6 +13,7 @@ GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 DARK_BLUE = (6, 7, 15)
+SUMM = 5
 
 # инициализация игры
 pygame.init()
@@ -54,6 +55,31 @@ life_icon_height = 30
 # время через которое Enemy is removed после столкновения со стенкой (сек)
 COLLISION_TIME = 3
 
+
+def show_message_with_buttons(screen, message, button_text, button_action, color, position, font_size=40):
+    """Отображает сообщение с кнопкой."""
+    font = pygame.font.Font(None, font_size)
+    text = font.render(message, True, color)
+    text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 3))
+    screen.blit(text, text_rect)
+
+    # Создаем кнопку
+    button_width, button_height = 200, 50
+    button_x = (WIDTH - button_width) // 2
+    button_y = HEIGHT // 2
+    button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+    pygame.draw.rect(screen, BLUE, button_rect)
+    pygame.draw.rect(screen, WHITE, button_rect, 3)
+
+    # Отображаем текст на кнопке
+    button_font = pygame.font.Font(None, 30)
+    button_text_render = button_font.render(button_text, True, WHITE)
+    button_text_rect = button_text_render.get_rect(center=button_rect.center)
+    screen.blit(button_text_render, button_text_rect)
+
+    return button_rect
+
+
 running = True
 while running:
     clock.tick(FPS)
@@ -61,11 +87,9 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        # нажатие "Esc"
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                game_active = not game_active  # состояние игры
-            # стрельба пробелом
+                game_active = not game_active
             if event.key == pygame.K_SPACE and game_active:
                 bullet_rect = pygame.Rect(player_rect.right, player_rect.centery - 5, 20, 10)
                 bullets.append(bullet_rect)
@@ -129,13 +153,6 @@ while running:
         if player_rect.top < 0:
             player_rect.top = 0
 
-        # block Player movement
-        if player_rect.colliderect(wall_rect) and wall_visible:  # если игрок столкнулся со стенкой
-            if keystate[pygame.K_LEFT]:  # если движение влево, отменяем
-                player_rect.x += player_speed
-            if keystate[pygame.K_RIGHT]:  # если движение вправо, отменяем
-                player_rect.x -= player_speed
-
         # обновляем пули
         for bullet in bullets[:]:
             bullet.x += BULLET_SPEED
@@ -148,16 +165,67 @@ while running:
                 if bullet.colliderect(enemy['rect']):
                     bullets.remove(bullet)
                     enemies.remove(enemy)
+                    SUMM -= 1
+                    print(SUMM)
                     break
 
         # Заполняем экран фоном
         screen.fill(DARK_BLUE)
+
+        # Проверка условий выигрыша или проигрыша
+        if SUMM == 1:  # Условие выигрыша
+            screen.fill(BLACK)
+            next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Next Level', 'next', WHITE,
+                                                          (WIDTH // 2, HEIGHT // 3))
+            pygame.display.flip()
+
+            waiting = True
+            while waiting:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                        waiting = False
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        if next_level_button.collidepoint(event.pos):
+                            SUMM = 5
+                            enemies.clear()
+                            for i in range(5):
+                                enemy_rect = pygame.Rect(WIDTH - random.randint(50, 150),
+                                                         random.randint(50, HEIGHT - 50), 40, 40)
+                                enemies.append({'rect': enemy_rect, 'time_collided': None, 'collision_timer': 3})
+                            waiting = False
+
+        if lives <= 0:  # Условие проигрыша
+            screen.fill(BLACK)
+            try_again_button = show_message_with_buttons(screen, 'YOU LOSE!', 'Try Again', 'retry', WHITE,
+                                                         (WIDTH // 2, HEIGHT // 3))
+            pygame.display.flip()
+
+            waiting = True
+            while waiting:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                        waiting = False
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        if try_again_button.collidepoint(event.pos):
+                            lives = 3
+                            SUMM = 5
+                            bullets.clear()
+                            enemies.clear()
+                            for i in range(5):
+                                enemy_rect = pygame.Rect(WIDTH - random.randint(50, 150),
+                                                         random.randint(50, HEIGHT - 50), 40, 40)
+                                enemies.append({'rect': enemy_rect, 'time_collided': None, 'collision_timer': 3})
+                            waiting = False
+
         # Рисуем игрока (зеленый квадрат)
         pygame.draw.rect(screen, GREEN, player_rect)
         # Рисуем врагов (красные квадраты)
         for enemy in enemies:
             pygame.draw.rect(screen, RED, enemy['rect'])
-            # таймер отображаемый для Enemy (по истечении Enemy они наносят урон)
+
+            # таймер отображаемый для Enemy
             font = pygame.font.Font(None, 30)
             timer_text = font.render(f"{int(enemy['collision_timer'])}", True, WHITE)
             screen.blit(timer_text, (enemy['rect'].x + 10, enemy['rect'].y - 20))
@@ -167,17 +235,18 @@ while running:
             pygame.draw.rect(screen, YELLOW, bullet)
         pygame.draw.rect(screen, YELLOW, wall_rect)
 
-        # добавила жизни для Player
+        # отображение жизней
         for i in range(lives):
             pygame.draw.rect(screen, GREEN,
                              pygame.Rect(10 + i * (life_icon_width + 5), 10, life_icon_width, life_icon_height))
 
     else:
-        # если игра на паузе — черный экран
+        # если игра на паузе
         screen.fill(BLACK)
         font = pygame.font.Font(None, 40)
         text = font.render('PAUSED - Press Esc to resume', True, WHITE)
-        screen.blit(text, (WIDTH // 3.3, HEIGHT // 2.2))
+        screen.blit(text, (WIDTH // 2.5, HEIGHT // 2.2))
 
     pygame.display.flip()
+
 pygame.quit()
