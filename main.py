@@ -245,7 +245,7 @@ while running:
         screen.fill(BLACK)
         font = pygame.font.Font(None, 40)
         text = font.render('PAUSED - Press Esc to resume', True, WHITE)
-        screen.blit(text, (WIDTH // 2.5, HEIGHT // 2.2))
+        screen.blit(text, (WIDTH // 3.4, HEIGHT // 2.2))
 
     pygame.display.flip()
 
