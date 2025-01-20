@@ -28,11 +28,6 @@ player_rect = pygame.Rect(WIDTH // 4, HEIGHT - 270, 50, 50)
 # Enemies (красные квадраты)
 enemies = []
 
-# враги, движение влево
-for i in range(5):  # создадим 5 врагов
-    enemy_rect = pygame.Rect(WIDTH - random.randint(50, 150), random.randint(50, HEIGHT - 50), 40, 40)
-    enemies.append({'rect': enemy_rect, 'time_collided': None, 'collision_timer': 3})  # добавляем таймер
-
 # стенка (вертикальная)
 wall_rect = pygame.Rect(WIDTH // 2, 0, 20, HEIGHT)
 
@@ -54,6 +49,10 @@ life_icon_width = 30
 life_icon_height = 30
 # время через которое Enemy is removed после столкновения со стенкой (сек)
 COLLISION_TIME = 3
+
+# Таймер для появления новых врагов
+last_enemy_spawn_time = 0
+enemy_spawn_interval = random.uniform(4, 5)  # интервал от 4 до 5 секунд для появления новых врагов
 
 
 def show_message_with_buttons(screen, message, button_text, button_action, color, position, font_size=40):
@@ -95,6 +94,23 @@ while running:
                 bullets.append(bullet_rect)
 
     if game_active:
+        # таймер появления врагов
+        current_time = time.time()
+
+        # if прошло дост времени создаем врагов
+        if current_time - last_enemy_spawn_time >= enemy_spawn_interval:
+            # создаем 2-3 врагов
+            number_of_enemies_to_spawn = random.randint(2, 3)
+            for _ in range(number_of_enemies_to_spawn):
+                enemy_rect = pygame.Rect(WIDTH - random.randint(50, 150), random.randint(50, HEIGHT - 50), 40, 40)
+                enemies.append({'rect': enemy_rect, 'time_collided': None, 'collision_timer': 3})
+
+            # upd время последнего появления врага
+            last_enemy_spawn_time = current_time
+
+            # upd интервал между появлениями
+            enemy_spawn_interval = random.uniform(4, 5)  # случайный интервал от 4 до 5 секунд
+
         # update Enemy (движутся right to left)
         for enemy in enemies[:]:
             enemy_rect = enemy['rect']
@@ -137,7 +153,9 @@ while running:
         if keystate[pygame.K_LEFT]:
             player_rect.x -= player_speed
         if keystate[pygame.K_RIGHT]:
-            player_rect.x += player_speed
+            # проверка чтобы игрок не прошел через стенку
+            if player_rect.right < wall_rect.left:
+                player_rect.x += player_speed
         if keystate[pygame.K_UP]:
             player_rect.y -= player_speed
         if keystate[pygame.K_DOWN]:
@@ -189,10 +207,7 @@ while running:
                         if next_level_button.collidepoint(event.pos):
                             SUMM = 5
                             enemies.clear()
-                            for i in range(5):
-                                enemy_rect = pygame.Rect(WIDTH - random.randint(50, 150),
-                                                         random.randint(50, HEIGHT - 50), 40, 40)
-                                enemies.append({'rect': enemy_rect, 'time_collided': None, 'collision_timer': 3})
+                            last_enemy_spawn_time = time.time()  # сбрасываем таймер
                             waiting = False
 
         if lives <= 0:  # Условие проигрыша
@@ -213,10 +228,7 @@ while running:
                             SUMM = 5
                             bullets.clear()
                             enemies.clear()
-                            for i in range(5):
-                                enemy_rect = pygame.Rect(WIDTH - random.randint(50, 150),
-                                                         random.randint(50, HEIGHT - 50), 40, 40)
-                                enemies.append({'rect': enemy_rect, 'time_collided': None, 'collision_timer': 3})
+                            last_enemy_spawn_time = time.time()  # сбрасываем таймер
                             waiting = False
 
         # Рисуем игрока (зеленый квадрат)
@@ -250,3 +262,4 @@ while running:
     pygame.display.flip()
 
 pygame.quit()
+
