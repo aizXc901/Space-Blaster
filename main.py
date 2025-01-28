@@ -54,6 +54,12 @@ COLLISION_TIME = 3
 last_enemy_spawn_time = 0
 enemy_spawn_interval = random.uniform(4, 5)  # интервал от 4 до 5 секунд для появления новых врагов
 
+# Счетчик убитых врагов
+enemies_killed = 0
+
+# Флаг для отображения счетчика убитых врагов
+show_kills = True
+
 
 def show_message_with_buttons(screen, message, button_text, button_action, color, position, font_size=40):
     """Отображает сообщение с кнопкой."""
@@ -79,6 +85,18 @@ def show_message_with_buttons(screen, message, button_text, button_action, color
     return button_rect
 
 
+def reset_game():
+    """Сброс всех переменных для начала новой игры."""
+    global player_rect, enemies, bullets, lives, enemies_killed, last_enemy_spawn_time, SUMM
+    player_rect = pygame.Rect(WIDTH // 4, HEIGHT - 270, 50, 50)
+    enemies = []
+    bullets = []
+    lives = 3
+    enemies_killed = 0
+    last_enemy_spawn_time = time.time()
+    SUMM = 5
+
+
 running = True
 while running:
     clock.tick(FPS)
@@ -94,27 +112,27 @@ while running:
                 bullets.append(bullet_rect)
 
     if game_active:
-        # таймер появления врагов
+        # Таймер для появления врагов
         current_time = time.time()
 
-        # if прошло дост времени создаем врагов
+        # Если прошло достаточно времени, создаем врагов
         if current_time - last_enemy_spawn_time >= enemy_spawn_interval:
-            # создаем 2-3 врагов
+            # Создаем 2-3 врагов
             number_of_enemies_to_spawn = random.randint(2, 3)
             for _ in range(number_of_enemies_to_spawn):
                 enemy_rect = pygame.Rect(WIDTH - random.randint(50, 150), random.randint(50, HEIGHT - 50), 40, 40)
                 enemies.append({'rect': enemy_rect, 'time_collided': None, 'collision_timer': 3})
 
-            # upd время последнего появления врага
+            # Обновляем время последнего появления врага
             last_enemy_spawn_time = current_time
 
-            # upd интервал между появлениями
+            # Обновляем интервал между появлениями
             enemy_spawn_interval = random.uniform(4, 5)  # случайный интервал от 4 до 5 секунд
 
         # update Enemy (движутся right to left)
         for enemy in enemies[:]:
             enemy_rect = enemy['rect']
-            enemy_speed = random.uniform(0.5, 1.0)  # случайная скорость врагов от 0.5 до 1.0
+            enemy_speed = 0.525  # случайная скорость врагов от 0.5 до 1.0
 
             # check не столкнулся ли Enemy со стенкой
             if enemy_rect.colliderect(wall_rect) and wall_visible:
@@ -153,7 +171,7 @@ while running:
         if keystate[pygame.K_LEFT]:
             player_rect.x -= player_speed
         if keystate[pygame.K_RIGHT]:
-            # проверка чтобы игрок не прошел через стенку
+            # Проверка, если игрок не должен пройти через стенку
             if player_rect.right < wall_rect.left:
                 player_rect.x += player_speed
         if keystate[pygame.K_UP]:
@@ -184,6 +202,7 @@ while running:
                     bullets.remove(bullet)
                     enemies.remove(enemy)
                     SUMM -= 1
+                    enemies_killed += 1  # Увеличиваем счетчик убитых врагов
                     print(SUMM)
                     break
 
@@ -191,7 +210,7 @@ while running:
         screen.fill(DARK_BLUE)
 
         # Проверка условий выигрыша или проигрыша
-        if SUMM == 1:  # Условие выигрыша
+        if enemies_killed == 9:  # Условие выигрыша
             screen.fill(BLACK)
             next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Next Level', 'next', WHITE,
                                                           (WIDTH // 2, HEIGHT // 3))
@@ -205,9 +224,7 @@ while running:
                         waiting = False
                     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                         if next_level_button.collidepoint(event.pos):
-                            SUMM = 5
-                            enemies.clear()
-                            last_enemy_spawn_time = time.time()  # сбрасываем таймер
+                            reset_game()  # Сбрасываем игру
                             waiting = False
 
         if lives <= 0:  # Условие проигрыша
@@ -224,11 +241,7 @@ while running:
                         waiting = False
                     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                         if try_again_button.collidepoint(event.pos):
-                            lives = 3
-                            SUMM = 5
-                            bullets.clear()
-                            enemies.clear()
-                            last_enemy_spawn_time = time.time()  # сбрасываем таймер
+                            reset_game()  # Сбрасываем игру
                             waiting = False
 
         # Рисуем игрока (зеленый квадрат)
@@ -251,6 +264,12 @@ while running:
         for i in range(lives):
             pygame.draw.rect(screen, GREEN,
                              pygame.Rect(10 + i * (life_icon_width + 5), 10, life_icon_width, life_icon_height))
+
+        # Отображение счета убитых врагов (если включен флаг)
+        if show_kills:
+            font = pygame.font.Font(None, 40)
+            kills_text = font.render(f"Kills: {enemies_killed}", True, WHITE)
+            screen.blit(kills_text, (WIDTH // 2 - 100, 10))
 
     else:
         # если игра на паузе
