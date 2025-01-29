@@ -167,7 +167,7 @@ while running:
         keystate = pygame.key.get_pressed()
 
         # Управление игроком (стрелочки)
-        player_speed = 4
+        player_speed = 3
         if keystate[pygame.K_LEFT]:
             player_rect.x -= player_speed
         if keystate[pygame.K_RIGHT]:
