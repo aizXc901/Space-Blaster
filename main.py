@@ -1,8 +1,9 @@
 import pygame
 import random
 import time
+import sqlite3
 
-# всякое для игры
+# Всякое для игры
 WIDTH = 960
 HEIGHT = 540
 FPS = 180
@@ -14,52 +15,54 @@ BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 DARK_BLUE = (6, 7, 15)
 SUMM = 5
+COLLISION_TIME = 3  # Время, которое враг проводит у стенки перед удалением
+BULLET_SPEED = 5  # Скорость пуль
+show_kills = True  # Флаг для отображения количества убийств
+wall_visible = True  # Флаг для отображения стенки
 
-# инициализация игры
+# Инициализация игры
 pygame.init()
 pygame.mixer.init()
+
+# Инициализация шрифтов
+pygame.font.init()
+
+# Проверка, что шрифты инициализированы
+if not pygame.font.get_init():
+    raise RuntimeError("Шрифты не инициализированы")
+
+# Создание экрана
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Space Blaster")
 clock = pygame.time.Clock()
 
-# Player (зеленый прямоугольник)
-player_rect = pygame.Rect(WIDTH // 4, HEIGHT - 270, 50, 50)
+# Подключение к базе данных SQLite
+conn = sqlite3.connect('records.db')
+cursor = conn.cursor()
 
-# Enemies (красные квадраты)
-enemies = []
+# Создание таблицы для хранения рекордов
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    player_name TEXT NOT NULL,
+    score INTEGER NOT NULL
+)
+''')
+conn.commit()
 
-# стенка (вертикальная)
-wall_rect = pygame.Rect(WIDTH // 2, 0, 20, HEIGHT)
-
-# Переменная для видимости стенки
-wall_visible = True
-
-# снаряды Player
-bullets = []
-BULLET_SPEED = 5
-
-# количество жизней Player
-lives = 3
-
-# cостояние игры (True=основной экран, False=пауза)
+# Состояние игры (True=основной экран, False=пауза)
 game_active = True
 
-# Размер для спрайта жизни
-life_icon_width = 30
-life_icon_height = 30
-# время через которое Enemy is removed после столкновения со стенкой (сек)
-COLLISION_TIME = 3
-
 # Таймер для появления новых врагов
-last_enemy_spawn_time = 0
+last_enemy_spawn_time = time.time()
 enemy_spawn_interval = random.uniform(4, 5)  # интервал от 4 до 5 секунд для появления новых врагов
 
-# Счетчик убитых врагов
-enemies_killed = 0
+# Стенка (вертикальная)
+wall_rect = pygame.Rect(WIDTH // 2, 0, 20, HEIGHT)
 
-# Флаг для отображения счетчика убитых врагов
-show_kills = True
-
+# Размер для спрайта жизни
+life_icon_width = 30  # Добавляем определение переменной
+life_icon_height = 30  # Добавляем определение переменной
 
 def show_message_with_buttons(screen, message, button_text, button_action, color, position, font_size=40):
     """Отображает сообщение с кнопкой."""
@@ -84,7 +87,6 @@ def show_message_with_buttons(screen, message, button_text, button_action, color
 
     return button_rect
 
-
 def reset_game():
     """Сброс всех переменных для начала новой игры."""
     global player_rect, enemies, bullets, lives, enemies_killed, last_enemy_spawn_time, SUMM
@@ -96,8 +98,109 @@ def reset_game():
     last_enemy_spawn_time = time.time()
     SUMM = 5
 
+def save_record(player_name, score):
+    """Сохраняет рекорд игрока в базу данных."""
+    cursor.execute('INSERT INTO records (player_name, score) VALUES (?, ?)', (player_name, score))
+    conn.commit()
 
+def show_high_scores(screen):
+    """Отображает таблицу рекордов."""
+    screen.fill(BLACK)
+    font = pygame.font.Font(None, 40)
+    title_text = font.render('High Scores', True, WHITE)
+    screen.blit(title_text, (WIDTH // 2 - 100, 50))
+
+    # Получаем рекорды из базы данных
+    cursor.execute('SELECT player_name, score FROM records ORDER BY score DESC LIMIT 10')
+    records = cursor.fetchall()
+
+    # Отображаем рекорды
+    y_offset = 150
+    for idx, (name, score) in enumerate(records):
+        record_text = font.render(f"{idx + 1}. {name}: {score}", True, WHITE)
+        screen.blit(record_text, (WIDTH // 2 - 100, y_offset))
+        y_offset += 50
+
+    # Кнопка возврата в меню
+    back_button = show_message_with_buttons(screen, '', 'Back', 'back', WHITE, (WIDTH // 2, HEIGHT - 100))
+    pygame.display.flip()
+
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if back_button.collidepoint(event.pos):
+                    waiting = False
+
+def get_player_name(screen):
+    """Получает имя игрока через текстовый ввод."""
+    input_box = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2, 200, 50)
+    color_inactive = pygame.Color('lightskyblue3')
+    color_active = pygame.Color('dodgerblue2')
+    color = color_inactive
+    active = False
+    text = ''
+    font = pygame.font.Font(None, 32)
+    done = False
+
+    while not done:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return None
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if input_box.collidepoint(event.pos):
+                    active = not active
+                else:
+                    active = False
+                color = color_active if active else color_inactive
+            if event.type == pygame.KEYDOWN:
+                if active:
+                    if event.key == pygame.K_RETURN:
+                        done = True
+                    elif event.key == pygame.K_BACKSPACE:
+                        text = text[:-1]
+                    else:
+                        text += event.unicode
+
+        screen.fill(BLACK)
+        txt_surface = font.render(text, True, color)
+        width = max(200, txt_surface.get_width() + 10)
+        input_box.w = width
+        screen.blit(txt_surface, (input_box.x + 5, input_box.y + 5))
+        pygame.draw.rect(screen, color, input_box, 2)
+        pygame.display.flip()
+        clock.tick(30)
+
+    return text
+
+def show_final_stats(screen, player_name, kills):
+    """Отображает финальную статистику (ник и количество убийств)."""
+    screen.fill(BLACK)
+    font = pygame.font.Font(None, 40)
+    stats_text = font.render(f"Player: {player_name}, Kills: {kills}", True, WHITE)
+    screen.blit(stats_text, (WIDTH // 2 - 150, HEIGHT // 2))
+    pygame.display.flip()
+    time.sleep(3)  # Показываем статистику 3 секунды
+
+# Основной игровой цикл
 running = True
+
+# Запрос ника игрока в начале игры
+player_name = get_player_name(screen)
+if not player_name:
+    running = False  # Если игрок не ввел имя, завершаем игру
+
+# Инициализация игровых объектов
+player_rect = pygame.Rect(WIDTH // 4, HEIGHT - 270, 50, 50)
+enemies = []
+bullets = []
+lives = 3
+enemies_killed = 0
+
 while running:
     clock.tick(FPS)
 
@@ -212,6 +315,9 @@ while running:
         # Проверка условий выигрыша или проигрыша
         if enemies_killed == 9:  # Условие выигрыша
             screen.fill(BLACK)
+            if player_name:
+                save_record(player_name, enemies_killed)
+            show_final_stats(screen, player_name, enemies_killed)  # Показываем финальную статистику
             next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Next Level', 'next', WHITE,
                                                           (WIDTH // 2, HEIGHT // 3))
             pygame.display.flip()
@@ -229,6 +335,9 @@ while running:
 
         if lives <= 0:  # Условие проигрыша
             screen.fill(BLACK)
+            if player_name:
+                save_record(player_name, enemies_killed)
+            show_final_stats(screen, player_name, enemies_killed)  # Показываем финальную статистику
             try_again_button = show_message_with_buttons(screen, 'YOU LOSE!', 'Try Again', 'retry', WHITE,
                                                          (WIDTH // 2, HEIGHT // 3))
             pygame.display.flip()
@@ -280,5 +389,6 @@ while running:
 
     pygame.display.flip()
 
+# Закрываем соединение с базой данных
+conn.close()
 pygame.quit()
-
