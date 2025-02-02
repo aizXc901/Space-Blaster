@@ -137,7 +137,7 @@ def show_high_scores(screen):
 
 def get_player_name(screen):
     """Получает имя игрока через текстовый ввод."""
-    input_box = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2, 200, 50)
+    input_box = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 50, 200, 50)  # сдвигаем поле ввода
     color_inactive = pygame.Color('lightskyblue3')
     color_active = pygame.Color('dodgerblue2')
     color = color_inactive
@@ -145,6 +145,12 @@ def get_player_name(screen):
     text = ''
     font = pygame.font.Font(None, 32)
     done = False
+
+    # Отображаем надпись "Please enter your username" по центру
+    font_message = pygame.font.Font(None, 40)
+    message_text = font_message.render("Please enter your username", True, WHITE)
+    message_text_rect = message_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 10))  # Центрируем надпись
+    screen.blit(message_text, message_text_rect)  # Отображаем текст
 
     while not done:
         for event in pygame.event.get():
@@ -167,6 +173,9 @@ def get_player_name(screen):
                         text += event.unicode
 
         screen.fill(BLACK)
+        # Отображаем надпись снова, чтобы она не исчезала
+        screen.blit(message_text, message_text_rect)
+
         txt_surface = font.render(text, True, color)
         width = max(200, txt_surface.get_width() + 10)
         input_box.w = width
