@@ -400,30 +400,76 @@ while running:
                             reset_game()  # Сбрасываем игру для финальной битвы
                             waiting = False
         elif current_wave == 3:
+            # Третья волна - финальная битва с боссом
             screen.fill(BLACK)
             # Восстановление здоровья игрока до максимума
             lives = 3
             enemies_killed = 0
+
             # Удаляем всех врагов перед финальной волной
             enemies.clear()
-            # Создаем босса
-            final_enemy = {'rect': pygame.Rect(WIDTH - 200, random.randint(50, HEIGHT - 50), 120, 120),
-                           'hp': 3, 'speed': 0.525}
-            enemies.append(final_enemy)  # Добавляем финального врага
-            # Отображение кнопки для начала финальной битвы
-            # next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Final Wave', 'final',
-            #                                              WHITE,
-            #                                              (WIDTH // 2, HEIGHT // 3))
 
-            while waiting:
+            # Создаем босса
+            final_enemy = {
+                'rect': pygame.Rect(WIDTH - 200, HEIGHT // 2, 120, 120),  # Позиция и размер
+                'hp': 3,
+                'speed': 0.525,  # Скорость движения босса
+                'direction': -1  # Направление движения (влево)
+            }
+
+            enemies.append(final_enemy)  # Добавляем финального врага в список врагов
+
+            # Основной игровой цикл для этой волны (пока босс не погибнет)
+            while enemies:  # Пока есть враги (босс жив)
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         running = False
-                        waiting = False
-                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                        if next_level_button.collidepoint(event.pos):
-                            reset_game()
-                            waiting = False
+                        break
+
+                # Обновление состояния игры
+                screen.fill(BLACK)
+
+                # Движение босса
+                for enemy in enemies[:]:
+                    enemy_rect = enemy['rect']
+
+                    # Движение влево (по оси X)
+                    enemy_rect.x += enemy['speed'] * enemy['direction']
+
+                    # Если босс столкнулся с границей экрана, меняем его направление
+                    if enemy_rect.left <= 0 or enemy_rect.right >= WIDTH:
+                        enemy['direction'] *= -1  # Меняем направление движения
+
+                    # Рисуем босса
+                    pygame.draw.rect(screen, RED, enemy_rect)
+
+                    # Проверка на столкновение с пулями
+                    for bullet in bullets[:]:
+                        if bullet.colliderect(enemy_rect):
+                            # Пуля уничтожает врага, если у него кончаются очки жизни
+                            enemy['hp'] -= 1
+                            bullets.remove(bullet)  # Удаляем пулю
+
+                            # Если у босса больше нет здоровья
+                            if enemy['hp'] <= 0:
+                                enemies.remove(enemy)
+                                enemies_killed += 1  # Увеличиваем количество убитых врагов
+                            break
+
+                # Отображаем счет убитых врагов (включая босса)
+                font = pygame.font.Font(None, 40)
+                kills_text = font.render(f"Kills: {enemies_killed}", True, WHITE)
+                screen.blit(kills_text, (WIDTH // 2 - 100, 10))
+
+                # Отображение жизней
+                for i in range(lives):
+                    pygame.draw.rect(screen, GREEN, pygame.Rect(10 + i * (life_icon_width + 5), 10, life_icon_width, life_icon_height))
+
+                pygame.display.flip()
+                clock.tick(FPS)
+
+            # Если босс побежден
+            show_final_stats(screen, player_name, enemies_killed)
 
         # Рисуем игрока (зеленый квадрат)
         pygame.draw.rect(screen, GREEN, player_rect)
