@@ -194,6 +194,8 @@ def show_final_stats(screen, player_name, kills):
     screen.blit(stats_text, (WIDTH // 2 - 150, HEIGHT // 2))
     pygame.display.flip()
     time.sleep(3)  # Показываем статистику 3 секунды
+    screen.fill(BLACK)
+    pygame.display.flip()
 
 # Основной игровой цикл
 running = True
