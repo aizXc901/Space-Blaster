@@ -414,15 +414,6 @@ main_menu()
 while running:
     clock.tick(FPS)
 
-    if current_wave == 1:
-        pygame.mixer.Sound("sprites/music/wave_1.ogg").play(-1)
-
-    elif current_wave == 2:
-        pygame.mixer.Sound("sprites/music/wave_2.ogg").play(-1)
-
-    elif current_wave == 3:
-        pygame.mixer.Sound("sprites/music/wave_3(boss).ogg").play(-1)
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -516,7 +507,7 @@ while running:
 
                     # Кнопка для перезапуска игры
                     button_position = (WIDTH // 2, HEIGHT * 2 // 2.5)
-                    restart_button = show_message_with_buttons(screen, 'Restart', 'Restart', 'restart', WHITE,
+                    restart_button = show_message_with_buttons(screen, '', 'Restart', 'restart', WHITE,
                                                                button_position)
                     pygame.display.flip()
 
@@ -563,7 +554,7 @@ while running:
             # Определение положения кнопки
             button_position = (WIDTH // 2, HEIGHT * 2 // 2.5)
             # Вызов функции с передачей всех необходимых аргументов
-            restart_button = show_message_with_buttons(screen, 'Restart', 'Restart',
+            restart_button = show_message_with_buttons(screen, '', 'Restart',
                                                        'restart', WHITE, button_position)
             pygame.display.flip()  # Обновляем экран
 
@@ -757,9 +748,9 @@ while running:
 
                 screen.fill(BLACK)
 
-                font = pygame.font.Font(my_font, 72)
+                font = pygame.font.Font(my_font, 36)
 
-                text = font.render("YOU WON", True, WHITE)
+                text = font.render("YOU WON, CLOSE GAME", True, WHITE)
 
                 text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 3.2))
 
@@ -767,8 +758,8 @@ while running:
 
                 # Кнопка "Restart"
 
-                restart_button = show_message_with_buttons(screen, '', 'Restart', 'restart', WHITE,
-                                                           (WIDTH // 2, HEIGHT // 2))
+                # restart_button = show_message_with_buttons(screen, '', 'Restart', 'restart', WHITE,
+                # (WIDTH // 2, HEIGHT // 2))
 
                 pygame.display.flip()
 
