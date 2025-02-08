@@ -547,7 +547,7 @@ while running:
             screen.fill(BLACK)  # Очистка экрана
 
             font = pygame.font.Font(my_font, 72)  # Заголовок шрифтом размером 72
-            text = font.render("YOU WON", True, WHITE)  # Создаем текст "YOU WON"
+            text = font.render("YOU WON", True, WHITE)
             text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 3.2))  # Центрирование текста
             screen.blit(text, text_rect)  # Отображение текста на экране
 
@@ -616,7 +616,6 @@ while running:
                 if bullet['rect'].colliderect(final_enemy['rect']):  # Проверяем столкновение с боссом
                     bullets.remove(bullet)  # Удаляем пулю при попадании
                     final_enemy['hp'] -= 1  # Уменьшаем здоровье босса
-                    print(f"Босс получил урон! Осталось HP: {final_enemy['hp']}")  # Отладочный вывод в консоль
                     if final_enemy['hp'] <= 0:
                         final_enemy = None  # Удаляем босса
                     break  # Прерываем цикл, чтобы не удалять несколько пуль за одно попадание
@@ -652,8 +651,10 @@ while running:
                 enemy_spawn_interval = random.uniform(3, 4)  # Уменьшаем интервал между врагами, чтобы усложнить игру
 
             # Кнопка "Next Wave" (опущена ниже)
-            next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Next Wave', 'next', WHITE,
-                                                          (WIDTH // 2, HEIGHT // 2))  # Изменено y на HEIGHT // 2
+            next_level_button = show_message_with_buttons(screen,
+                                                          f"YOU PASSED WAVE {current_wave - 1}", 'Next Wave',
+                                                          'next', WHITE,(WIDTH // 2, HEIGHT // 2), 40)
+            # Изменено y на HEIGHT // 2
             pygame.display.flip()
             waiting = True
             while waiting:
@@ -675,8 +676,9 @@ while running:
             current_wave += 1  # Переход к финальной волне
 
             # Кнопка "Next Wave" (опущена ниже)
-            next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Next Wave', 'next', WHITE,
-                                                          (WIDTH // 2, HEIGHT // 2))  # Изменено y на HEIGHT // 2
+            next_level_button = show_message_with_buttons(screen,
+                                                          f"YOU PASSED WAVE {current_wave - 1}", 'Next Wave',
+                                                          'next', WHITE, (WIDTH // 2, HEIGHT // 2), 40)
             pygame.display.flip()
             waiting = True
             while waiting:
@@ -689,97 +691,53 @@ while running:
                             reset_game()  # Сбрасываем игру для финальной битвы
                             waiting = False
 
-
         elif current_wave == 3:
-
-            screen.fill(BLACK)
-
             # Восстановление здоровья игрока до максимума
-
-            background = pygame.image.load("sprites/background/bg-preview.png")
-
-            background = pygame.transform.scale(background, (WIDTH, HEIGHT))
-
             lives = 3
-
             enemies_killed = 0
-
             # Удаляем всех врагов перед финальной волной
-
             enemies.clear()
-
-            # Убедитесь, что финальный враг существует
-
             if final_enemy:
                 final_enemy_rect = final_enemy['rect']
-
                 final_enemy_rect.centery = HEIGHT // 2  # Центрируем босса по вертикали
-
                 boss_speed = 1  # Устанавливаем скорость босса
-
                 # Перемещаем босса каждый кадр
-
                 move_boss(final_enemy_rect, wall_rect, wall_visible, boss_speed)
-
                 # Рисуем босс с изображением астероида
-
                 screen.blit(asteroid_sprite, final_enemy_rect)  # Используем спрайт астероида для отображения босса
 
             # Удаление пуль при попадании
 
             for bullet in bullets[:]:
-
                 if bullet['rect'].colliderect(final_enemy['rect']):
-
                     bullets.remove(bullet)  # Удаляем пулю при попадании
-
                     final_enemy['hp'] -= 1  # Уменьшаем HP босса
-
                     print(f"Босс получил урон! Осталось HP: {final_enemy['hp']}")  # Отладочный вывод в консоль
-
                     if final_enemy['hp'] <= 0:
                         final_enemy = None  # Удаляем босса
-
                         break
 
-            # Отображение HP босса над ним
+                # Отображение HP босса над ним
+                if current_wave == 3 and not final_enemy:
+                    font = pygame.font.Font(my_font, 36)
+                    text = font.render("YOU WON, CLOSE GAME", True, WHITE)
+                    text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+                    screen.blit(text, text_rect)
+                    # Кнопка "Restart"
+                    # restart_button = show_message_with_buttons(screen, '', 'Restart', 'restart', WHITE,
+                    # (WIDTH // 2, HEIGHT // 2))
 
-            if current_wave == 3 and not final_enemy:
-
-                screen.fill(BLACK)
-
-                font = pygame.font.Font(my_font, 36)
-
-                text = font.render("YOU WON, CLOSE GAME", True, WHITE)
-
-                text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 3.2))
-
-                screen.blit(text, text_rect)
-
-                # Кнопка "Restart"
-
-                # restart_button = show_message_with_buttons(screen, '', 'Restart', 'restart', WHITE,
-                # (WIDTH // 2, HEIGHT // 2))
-
-                pygame.display.flip()
-
-                waiting = True
-
-                while waiting:
-
-                    for event in pygame.event.get():
-
-                        if event.type == pygame.QUIT:
-                            running = False
-
-                            waiting = False
-
-                        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-
-                            if restart_button.collidepoint(event.pos):
-                                reset_game()  # Сбрасываем игру для новой попытки
-
+                    pygame.display.flip()
+                    waiting = True
+                    while waiting:
+                        for event in pygame.event.get():
+                            if event.type == pygame.QUIT:
+                                running = False
                                 waiting = False
+                            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                                if restart_button.collidepoint(event.pos):
+                                    reset_game()  # Сбрасываем игру для новой попытки
+                                    waiting = False
 
         # рисуем игрока с анимацией
         screen.blit(current_player_sprite, player_rect)  # Используем текущий спрайт игрока
