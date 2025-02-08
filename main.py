@@ -3,6 +3,9 @@ import random
 import time
 import sqlite3
 
+# Инициализация Pygame
+pygame.init()
+
 # Всякое для игры
 WIDTH = 960
 HEIGHT = 540
@@ -23,13 +26,18 @@ final_enemy = {'rect': pygame.Rect(WIDTH - 200, random.randint(50, HEIGHT - 50),
 show_kills = True  # Флаг для отображения количества убийств
 wall_visible = True  # Флаг для отображения стенки
 
+# Создание экрана
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Моя игра")
+
 # Загрузка и масштабирование фона
-background = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\background\\bg-preview-big.png")
+background = pygame.image.load("sprites/background/bg-preview.png")
+background = pygame.transform.scale(background, (WIDTH, HEIGHT))
 
 # Загрузка спрайтов для анимации
-player_sprite1 = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\player\\sprites\\player1.png")
-player_sprite2 = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\player\\sprites\\player2.png")
-player_sprite3 = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\player\\sprites\\player3.png")
+player_sprite1 = pygame.image.load("sprites/player/sprites/player1.png")
+player_sprite2 = pygame.image.load("sprites/player/sprites/player2.png")
+player_sprite3 = pygame.image.load("sprites/player/sprites/player3.png")
 
 # Преобразуем их в нужный размер
 player_sprite1 = pygame.transform.scale(player_sprite1, (50, 50))
@@ -45,8 +53,8 @@ player_animation_timer = 0  # Таймер для анимации
 animation_delay = 45  # Задержка между сменой спрайтов (в кадрах)
 
 # Загрузка спрайтов для пули
-bullet_sprite1 = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\shoot\\shoot1.png")
-bullet_sprite2 = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\shoot\\shoot2.png")
+bullet_sprite1 = pygame.image.load("sprites/shoot/shoot1.png")
+bullet_sprite2 = pygame.image.load("sprites/shoot/shoot2.png")
 
 # Преобразуем их в нужный размер
 bullet_sprite1 = pygame.transform.scale(bullet_sprite1, (20, 10))
@@ -57,11 +65,11 @@ bullet_sprites = [bullet_sprite1, bullet_sprite2]
 
 # Загрузка спрайта для обычных врагов
 enemy_sprite\
-    = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\asteroids\\asteroid-small.png")
+    = pygame.image.load("sprites/asteroids/asteroid-small.png")
 enemy_sprite = pygame.transform.scale(enemy_sprite, (50, 50))
 # Загрузка спрайта для астероида
 asteroid_sprite =\
-    pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\asteroids\\asteroid.png")
+    pygame.image.load("sprites/asteroids/asteroid.png")
 asteroid_sprite = pygame.transform.scale(asteroid_sprite, (120, 120))  # Масштабируем, чтобы он подходил по размеру
 
 # Инициализация игры
@@ -69,7 +77,7 @@ pygame.init()
 pygame.mixer.init()
 
 # Инициализация шрифтов
-my_font = 'C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\Font\\00218_5X5-B___.ttf'
+my_font = 'sprites/Font/00218_5X5-B___.ttf'
 pygame.font.Font(my_font,30)
 
 # Создание экрана
@@ -523,6 +531,7 @@ while running:
             screen.blit(asteroid_sprite, final_enemy_rect)
         elif current_wave == 3:  # Если босса нет, значит игрок победил
             screen.fill(BLACK)  # Очистка экрана
+
             font = pygame.font.Font(my_font, 72)  # Заголовок шрифтом размером 72
             text = font.render("YOU WON", True, WHITE)  # Создаем текст "YOU WON"
             text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 3.2))  # Центрирование текста
@@ -623,8 +632,9 @@ while running:
                 # Условия второй волны
                 enemy_spawn_interval = random.uniform(3, 4)  # Уменьшаем интервал между врагами, чтобы усложнить игру
 
+            # Кнопка "Next Wave" (опущена ниже)
             next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Next Wave', 'next', WHITE,
-                                                          (WIDTH // 2, HEIGHT // 3))
+                                                          (WIDTH // 2, HEIGHT // 2))  # Изменено y на HEIGHT // 2
             pygame.display.flip()
             waiting = True
             while waiting:
@@ -644,6 +654,12 @@ while running:
             show_final_stats(screen, player_name, enemies_killed)  # Показываем финальную статистику
             # Переход к третьей, финальной волне
             current_wave += 1  # Переход к финальной волне
+
+            # Кнопка "Next Wave" (опущена ниже)
+            next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Next Wave', 'next', WHITE,
+                                                          (WIDTH // 2, HEIGHT // 2))  # Изменено y на HEIGHT // 2
+            pygame.display.flip()
+            waiting = True
             while waiting:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
@@ -653,54 +669,100 @@ while running:
                         if next_level_button.collidepoint(event.pos):
                             reset_game()  # Сбрасываем игру для финальной битвы
                             waiting = False
-            next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Next Wave', 'next', WHITE,
-                                                          (WIDTH // 2, HEIGHT // 3))
+
 
         elif current_wave == 3:
+
             screen.fill(BLACK)
+
             # Восстановление здоровья игрока до максимума
+
+            background = pygame.image.load("sprites/background/bg-preview.png")
+
+            background = pygame.transform.scale(background, (WIDTH, HEIGHT))
+
             lives = 3
+
             enemies_killed = 0
+
             # Удаляем всех врагов перед финальной волной
+
             enemies.clear()
+
             # Убедитесь, что финальный враг существует
 
             if final_enemy:
                 final_enemy_rect = final_enemy['rect']
+
                 final_enemy_rect.centery = HEIGHT // 2  # Центрируем босса по вертикали
+
                 boss_speed = 1  # Устанавливаем скорость босса
+
                 # Перемещаем босса каждый кадр
+
                 move_boss(final_enemy_rect, wall_rect, wall_visible, boss_speed)
+
                 # Рисуем босс с изображением астероида
+
                 screen.blit(asteroid_sprite, final_enemy_rect)  # Используем спрайт астероида для отображения босса
 
             # Удаление пуль при попадании
+
             for bullet in bullets[:]:
+
                 if bullet['rect'].colliderect(final_enemy['rect']):
+
                     bullets.remove(bullet)  # Удаляем пулю при попадании
+
                     final_enemy['hp'] -= 1  # Уменьшаем HP босса
+
                     print(f"Босс получил урон! Осталось HP: {final_enemy['hp']}")  # Отладочный вывод в консоль
+
                     if final_enemy['hp'] <= 0:
                         final_enemy = None  # Удаляем босса
+
                         break
 
             # Отображение HP босса над ним
-            if current_wave == 3 and final_enemy:
-                font = pygame.font.Font(None, 30)
-                hp_text = font.render(f"HP {final_enemy['hp']}", True, WHITE)
-                screen.blit(hp_text,
-                            (final_enemy['rect'].x + 40, final_enemy['rect'].y - 20))  # Располагаем текст над боссом
 
-            # Логика завершения уровня
+
+
             if current_wave == 3 and not final_enemy:
-                font = pygame.font.Font(my_font, 72)  # Заголовок шрифтом размером 72
-                text = font.render("YOU WON", True, WHITE)  # Создаем текст "YOU WON"
-                text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 3.2))  # Центрирование текста
-                screen.blit(text, text_rect)  # Отображение текста на экране
 
-                # Определение положения кнопки
-                button_position = (WIDTH // 2, HEIGHT * 2 // 2.5)
+                screen.fill(BLACK)
+
+                font = pygame.font.Font(my_font, 72)
+
+                text = font.render("YOU WON", True, WHITE)
+
+                text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 3.2))
+
+                screen.blit(text, text_rect)
+
+                # Кнопка "Restart"
+
+                restart_button = show_message_with_buttons(screen, '', 'Restart', 'restart', WHITE,
+                                                           (WIDTH // 2, HEIGHT // 2))
+
                 pygame.display.flip()
+
+                waiting = True
+
+                while waiting:
+
+                    for event in pygame.event.get():
+
+                        if event.type == pygame.QUIT:
+                            running = False
+
+                            waiting = False
+
+                        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+
+                            if restart_button.collidepoint(event.pos):
+                                reset_game()  # Сбрасываем игру для новой попытки
+
+                                waiting = False
 
         # рисуем игрока с анимацией
         screen.blit(current_player_sprite, player_rect)  # Используем текущий спрайт игрока
