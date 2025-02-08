@@ -5,7 +5,7 @@ import sqlite3
 
 # Инициализация Pygame
 pygame.init()
-
+pygame.mixer.init()
 # Всякое для игры
 WIDTH = 960
 HEIGHT = 540
@@ -22,7 +22,7 @@ COLLISION_TIME = 3  # Время, которое враг проводит у с
 BULLET_SPEED = 5
 current_wave = 1  # Первая волна
 final_enemy = {'rect': pygame.Rect(WIDTH - 200, random.randint(50, HEIGHT - 50), 120, 120), 'hp': 10,
-                       'speed': 1}
+               'speed': 1}
 show_kills = True  # Флаг для отображения количества убийств
 wall_visible = True  # Флаг для отображения стенки
 
@@ -64,11 +64,11 @@ bullet_sprite2 = pygame.transform.scale(bullet_sprite2, (20, 10))
 bullet_sprites = [bullet_sprite1, bullet_sprite2]
 
 # Загрузка спрайта для обычных врагов
-enemy_sprite\
+enemy_sprite \
     = pygame.image.load("sprites/asteroids/asteroid-small.png")
 enemy_sprite = pygame.transform.scale(enemy_sprite, (50, 50))
 # Загрузка спрайта для астероида
-asteroid_sprite =\
+asteroid_sprite = \
     pygame.image.load("sprites/asteroids/asteroid.png")
 asteroid_sprite = pygame.transform.scale(asteroid_sprite, (120, 120))  # Масштабируем, чтобы он подходил по размеру
 
@@ -78,7 +78,7 @@ pygame.mixer.init()
 
 # Инициализация шрифтов
 my_font = 'sprites/Font/00218_5X5-B___.ttf'
-pygame.font.Font(my_font,30)
+pygame.font.Font(my_font, 30)
 
 # Создание экрана
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -115,9 +115,11 @@ wall_rect = pygame.Rect(WIDTH // 2, 0, 20, HEIGHT)
 life_icon_width = 30  # Добавляем определение переменной
 life_icon_height = 30  # Добавляем определение переменной
 
+
 def render_text(text, color=(255, 255, 255)):
     font = pygame.font.Font(my_font, 20)
     return font.render(text, True, color)
+
 
 def show_message_with_buttons(screen, message, button_text, button_action, color, position, font_size=40):
     """Отображает сообщение с кнопкой."""
@@ -140,6 +142,7 @@ def show_message_with_buttons(screen, message, button_text, button_action, color
 
     return button_rect
 
+
 def reset_game():
     """Сброс всех переменных для начала новой игры."""
     global player_rect, enemies, bullets, lives, enemies_killed, last_enemy_spawn_time, SUMM
@@ -150,6 +153,7 @@ def reset_game():
     enemies_killed = 0
     last_enemy_spawn_time = time.time()
     SUMM = 5
+
 
 def show_game_over(screen):
     """Отображает экран GAME OVER с кнопкой Restart."""
@@ -176,10 +180,12 @@ def show_game_over(screen):
                     reset_game()  # Сбрасываем игру для новой попытки
                     waiting = False
 
+
 def save_record(player_name, score):
     """Сохраняет рекорд игрока в базу данных."""
     cursor.execute('INSERT INTO records (player_name, score) VALUES (?, ?)', (player_name, score))
     conn.commit()
+
 
 def show_high_scores(screen):
     """Отображает таблицу рекордов."""
@@ -213,6 +219,7 @@ def show_high_scores(screen):
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if back_button.collidepoint(event.pos):
                     waiting = False
+
 
 def get_player_name(screen):
     """Получает имя игрока через текстовый ввод."""
@@ -265,6 +272,7 @@ def get_player_name(screen):
 
     return text
 
+
 def show_final_stats(screen, player_name, kills):
     """Отображает финальную статистику (ник и количество убийств)."""
     screen.fill(BLACK)
@@ -293,6 +301,7 @@ def show_final_stats(screen, player_name, kills):
     screen.fill(BLACK)
     pygame.display.flip()
 
+
 # Основной игровой цикл
 running = True
 
@@ -307,6 +316,7 @@ enemies = []
 bullets = []
 lives = 3
 enemies_killed = 0
+
 
 # Отображение текущей волны
 def display_wave(screen, current_wave):
@@ -366,8 +376,10 @@ def show_message_with_buttons(screen, message, button_text, button_action, color
 
 def main_menu():
     menu_active = True
+
     while menu_active:
         screen.fill(BLACK)
+        pygame.mixer.Sound("sprites/music/menu_music.ogg")
         font = pygame.font.Font(my_font, 50)
         title_text = font.render("Space Blaster", True, WHITE)
         screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, HEIGHT // 4))
@@ -393,12 +405,23 @@ def main_menu():
                 elif exit_button.collidepoint(event.pos):
                     pygame.quit()
                     exit()
+
+
 # Вызов начального меню
 main_menu()
 
 # Внесем изменения в основной игровой цикл:
 while running:
     clock.tick(FPS)
+
+    if current_wave == 1:
+        pygame.mixer.Sound("sprites/music/wave_1.ogg").play(-1)
+
+    elif current_wave == 2:
+        pygame.mixer.Sound("sprites/music/wave_2.ogg").play(-1)
+
+    elif current_wave == 3:
+        pygame.mixer.Sound("sprites/music/wave_3(boss).ogg").play(-1)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -609,15 +632,20 @@ while running:
 
         # Заполняем экран фоном
         screen.blit(background, (0, 0))
+
+
         def create_bullet():
             bullet_rect = pygame.Rect(player_rect.right, player_rect.centery - 5, 20, 10)
             return {'rect': bullet_rect, 'animation_index': 0, 'animation_timer': 0}
+
+
         # Логика движения босса
         def move_boss(final_enemy_rect, wall_rect, wall_visible, boss_speed):
             if final_enemy_rect.colliderect(wall_rect) and wall_visible:
                 final_enemy_rect.x += 1  # Если он сталкивается с стеной, он не двигается дальше
             else:
                 final_enemy_rect.x -= boss_speed  # Босс медленно движется влево
+
 
         # Проверка условий выигрыша или проигрыша
         if current_wave == 1 and enemies_killed == 6:  # Условие победы в первой волне
@@ -724,8 +752,6 @@ while running:
                         break
 
             # Отображение HP босса над ним
-
-
 
             if current_wave == 3 and not final_enemy:
 
