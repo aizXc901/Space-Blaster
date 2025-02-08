@@ -546,16 +546,16 @@ while running:
         elif current_wave == 3:  # Если босса нет, значит игрок победил
             screen.fill(BLACK)  # Очистка экрана
 
-            font = pygame.font.Font(my_font, 72)  # Заголовок шрифтом размером 72
-            text = font.render("YOU WON", True, WHITE)
+            font = pygame.font.Font(my_font, 36)  # Заголовок шрифтом размером 72
+            text = font.render("YOU WON, CLOSE GAME", True, WHITE)
             text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 3.2))  # Центрирование текста
             screen.blit(text, text_rect)  # Отображение текста на экране
 
             # Определение положения кнопки
             button_position = (WIDTH // 2, HEIGHT * 2 // 2.5)
             # Вызов функции с передачей всех необходимых аргументов
-            restart_button = show_message_with_buttons(screen, '', 'Restart',
-                                                       'restart', WHITE, button_position)
+            # restart_button = show_message_with_buttons(screen, '', 'Restart',
+            # 'restart', WHITE, button_position)
             pygame.display.flip()  # Обновляем экран
 
             waiting = True
@@ -653,7 +653,7 @@ while running:
             # Кнопка "Next Wave" (опущена ниже)
             next_level_button = show_message_with_buttons(screen,
                                                           f"YOU PASSED WAVE {current_wave - 1}", 'Next Wave',
-                                                          'next', WHITE,(WIDTH // 2, HEIGHT // 2), 40)
+                                                          'next', WHITE, (WIDTH // 2, HEIGHT // 2), 40)
             # Изменено y на HEIGHT // 2
             pygame.display.flip()
             waiting = True
