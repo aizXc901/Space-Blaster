@@ -23,6 +23,24 @@ final_enemy = {'rect': pygame.Rect(WIDTH - 200, random.randint(50, HEIGHT - 50),
 show_kills = True  # Флаг для отображения количества убийств
 wall_visible = True  # Флаг для отображения стенки
 
+# Загрузка спрайтов для анимации
+player_sprite1 = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\player\\sprites\\player1.png")
+player_sprite2 = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\player\\sprites\\player2.png")
+player_sprite3 = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\player\\sprites\\player3.png")
+
+# Преобразуем их в нужный размер
+player_sprite1 = pygame.transform.scale(player_sprite1, (50, 50))
+player_sprite2 = pygame.transform.scale(player_sprite2, (50, 50))
+player_sprite3 = pygame.transform.scale(player_sprite3, (50, 50))
+
+# Список изображений для анимации
+player_sprites = [player_sprite1, player_sprite2, player_sprite3]
+
+# Переменные для анимации
+player_animation_index = 0  # Индекс текущего спрайта
+player_animation_timer = 0  # Таймер для анимации
+animation_delay = 45  # Задержка между сменой спрайтов (в кадрах)
+
 # Инициализация игры
 pygame.init()
 pygame.mixer.init()
@@ -283,7 +301,14 @@ while running:
     if game_active:
         # Таймер для появления врагов
         current_time = time.time()
-
+        # Логика анимации игрока
+        player_animation_timer += 1
+        if player_animation_timer >= animation_delay:
+            # Переход к следующему спрайту
+            player_animation_index = (player_animation_index + 1) % len(player_sprites)
+            player_animation_timer = 0  # Сбрасываем таймер
+            # Получаем текущий спрайт игрока
+        current_player_sprite = player_sprites[player_animation_index]
         # Если прошло достаточно времени, создаем врагов
         if current_time - last_enemy_spawn_time >= enemy_spawn_interval:
             # Появление врагов только на 1 и 2 волне
@@ -404,7 +429,6 @@ while running:
         if keystate[pygame.K_LEFT]:
             player_rect.x -= player_speed
         if keystate[pygame.K_RIGHT]:
-            # Проверка, если игрок не должен пройти через стенку
             if player_rect.right < wall_rect.left:
                 player_rect.x += player_speed
         if keystate[pygame.K_UP]:
@@ -563,8 +587,8 @@ while running:
             #                                              WHITE,
             #                                              (WIDTH // 2, HEIGHT // 3))
 
-        # Рисуем игрока (зеленый квадрат)
-        pygame.draw.rect(screen, GREEN, player_rect)
+        # рисуем игрока с анимацией
+        screen.blit(current_player_sprite, player_rect)  # Используем текущий спрайт игрока
         # Рисуем врагов (красные квадраты)
         for enemy in enemies:
             pygame.draw.rect(screen, RED, enemy['rect'])
