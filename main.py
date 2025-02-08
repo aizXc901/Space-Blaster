@@ -56,6 +56,10 @@ bullet_sprites = [bullet_sprite1, bullet_sprite2]
 enemy_sprite\
     = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\asteroids\\asteroid-small.png")
 enemy_sprite = pygame.transform.scale(enemy_sprite, (50, 50))
+# Загрузка спрайта для астероида
+asteroid_sprite =\
+    pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\asteroids\\asteroid.png")
+asteroid_sprite = pygame.transform.scale(asteroid_sprite, (120, 120))  # Масштабируем, чтобы он подходил по размеру
 
 # Инициализация игры
 pygame.init()
@@ -422,16 +426,17 @@ while running:
             if enemy_rect.right < 0:
                 enemy_rect.left = WIDTH + enemy_speed * 10  # Возвращаемся плавно, смещая чуть правее края экрана
             screen.blit(enemy_sprite, enemy_rect)
-        # После проверки условий для босса
+        # Логика движения босса
         if current_wave == 3 and final_enemy is not None and final_enemy['hp'] > 0:
             final_enemy_rect = final_enemy['rect']
+
             if enemy_rect.colliderect(wall_rect) and wall_visible:
                 enemy_rect.x += 1  # если враг столкнулся с стенкой, не двигается дальше
             else:
                 enemy_rect.x -= enemy_speed  # враг двигается влево
 
             # Рисуем босс (пока он один)
-            pygame.draw.rect(screen, RED, final_enemy_rect)
+            screen.blit(asteroid_sprite, final_enemy_rect)
         elif current_wave == 3:  # Если босса нет, значит игрок победил
             screen.fill(BLACK)  # Очистка экрана
             font = pygame.font.Font(my_font, 72)  # Заголовок шрифтом размером 72
@@ -504,9 +509,9 @@ while running:
                 if bullet['rect'].colliderect(final_enemy['rect']):  # Проверяем столкновение с боссом
                     bullets.remove(bullet)  # Удаляем пулю при попадании
                     final_enemy['hp'] -= 1  # Уменьшаем здоровье босса
+                    print(f"Босс получил урон! Осталось HP: {final_enemy['hp']}")  # Отладочный вывод в консоль
                     if final_enemy['hp'] <= 0:
-                        if final_enemy in enemies:
-                            enemies.remove(final_enemy)  # Удаляем босса, если он погиб
+                        final_enemy = None  # Удаляем босса
                     break  # Прерываем цикл, чтобы не удалять несколько пуль за одно попадание
 
         # Заполняем экран фоном
@@ -567,6 +572,7 @@ while running:
             next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Next Wave', 'next', WHITE,
                                                           (WIDTH // 2, HEIGHT // 3))
 
+
         elif current_wave == 3:
             screen.fill(BLACK)
             # Восстановление здоровья игрока до максимума
@@ -574,19 +580,16 @@ while running:
             enemies_killed = 0
             # Удаляем всех врагов перед финальной волной
             enemies.clear()
-
             # Убедитесь, что финальный враг существует
+
             if final_enemy:
                 final_enemy_rect = final_enemy['rect']
-                final_enemy_rect.centery = HEIGHT // 2
-
+                final_enemy_rect.centery = HEIGHT // 2  # Центрируем босса по вертикали
                 boss_speed = 1  # Устанавливаем скорость босса
-
                 # Перемещаем босса каждый кадр
                 move_boss(final_enemy_rect, wall_rect, wall_visible, boss_speed)
-
-            # Рисуем босса
-                pygame.draw.rect(screen, RED, final_enemy_rect)  # Добавляем финального врага
+                # Рисуем босс с изображением астероида
+                screen.blit(asteroid_sprite, final_enemy_rect)  # Используем спрайт астероида для отображения босса
 
             # Удаление пуль при попадании
             for bullet in bullets[:]:
