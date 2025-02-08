@@ -153,8 +153,9 @@ def show_game_over(screen):
     screen.blit(text, text_rect)
 
     # Кнопка перезапуска
-    button_position = (WIDTH // 2, HEIGHT * 2 // 2.5)
-    restart_button = show_message_with_buttons(screen, 'Restart', 'Restart', 'restart', WHITE, button_position)
+    restart_button = show_message_with_buttons(screen, '', 'Restart', 'restart', WHITE, (0, 0))
+    restart_button_rect = restart_button.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+    screen.blit(restart_button, restart_button_rect)
     pygame.display.flip()
 
     # Ожидание нажатия кнопки
@@ -181,9 +182,7 @@ def show_high_scores(screen):
     screen.fill(BLACK)
     font = pygame.font.Font(my_font, 40)
     title_text = font.render('High Scores', True, WHITE)
-    screen.blit(title_text, (WIDTH // 2 - 100, 50))
-
-    # Получаем рекорды из базы данных
+    screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, 50))
     cursor.execute('SELECT player_name, score FROM records ORDER BY score DESC LIMIT 10')
     records = cursor.fetchall()
 
@@ -191,12 +190,11 @@ def show_high_scores(screen):
     y_offset = 150
     for idx, (name, score) in enumerate(records):
         record_text = font.render(f"{idx + 1}. {name}: {score}", True, WHITE)
-        screen.blit(record_text, (WIDTH // 2 - 100, y_offset))
+        screen.blit(record_text, (WIDTH // 2 - record_text.get_width() // 2, y_offset))
         y_offset += 50
 
     # Кнопка возврата в меню
-    back_button = show_message_with_buttons(screen, '', 'Back', 'back', WHITE,
-                                            (WIDTH // 2, HEIGHT - 100))
+    back_button = show_message_with_buttons(screen, '', 'Back', 'back', WHITE, (WIDTH // 2, HEIGHT - 100))
     pygame.display.flip()
 
     waiting = True
@@ -344,9 +342,6 @@ def show_message_with_buttons(screen, message, button_text, button_action, color
     return button_rect
 
 
-import pygame
-
-
 def render_text(text, color=(255, 255, 255)):
     font = pygame.font.Font(my_font, 20)
     return font.render(text, True, color)
@@ -381,15 +376,17 @@ def main_menu():
         screen.fill(BLACK)
         font = pygame.font.Font(my_font, 50)
         title_text = font.render("Space Blaster", True, WHITE)
-        screen.blit(title_text, (WIDTH // 2 - 150, HEIGHT // 5))
-
-        # Кнопки
-        start_button = show_message_with_buttons(screen, '', 'Start Game', 'start', WHITE, (WIDTH // 2, HEIGHT // 2))
-        scores_button = show_message_with_buttons(screen, '', 'High Scores', 'scores', WHITE,
+        screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, HEIGHT // 5))
+        start_button = show_message_with_buttons(screen,
+                                                 '', 'Start Game', 'start', WHITE,
+                                                 (WIDTH // 2, HEIGHT // 2))
+        scores_button = show_message_with_buttons(screen,
+                                                  '', 'High Scores', 'scores', WHITE,
                                                   (WIDTH // 2, HEIGHT // 2 + 70))
-        exit_button = show_message_with_buttons(screen, '', 'Exit', 'exit', WHITE, (WIDTH // 2, HEIGHT // 2 + 140))
+        exit_button = show_message_with_buttons(screen,
+                                                '', 'Exit', 'exit',
+                                                WHITE, (WIDTH // 2, HEIGHT // 2 + 140))
         pygame.display.flip()
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
