@@ -23,6 +23,9 @@ final_enemy = {'rect': pygame.Rect(WIDTH - 200, random.randint(50, HEIGHT - 50),
 show_kills = True  # Флаг для отображения количества убийств
 wall_visible = True  # Флаг для отображения стенки
 
+# Загрузка и масштабирование фона
+background = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\background\\bg-preview-big.png")
+
 # Загрузка спрайтов для анимации
 player_sprite1 = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\player\\sprites\\player1.png")
 player_sprite2 = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\player\\sprites\\player2.png")
@@ -253,7 +256,6 @@ def get_player_name(screen):
         clock.tick(30)
 
     return text
-
 
 def show_final_stats(screen, player_name, kills):
     """Отображает финальную статистику (ник и количество убийств)."""
@@ -515,7 +517,7 @@ while running:
                     break  # Прерываем цикл, чтобы не удалять несколько пуль за одно попадание
 
         # Заполняем экран фоном
-        screen.fill(DARK_BLUE)
+        screen.blit(background, (0, 0))
         def create_bullet():
             bullet_rect = pygame.Rect(player_rect.right, player_rect.centery - 5, 20, 10)
             return {'rect': bullet_rect, 'animation_index': 0, 'animation_timer': 0}
@@ -571,7 +573,6 @@ while running:
                             waiting = False
             next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Next Wave', 'next', WHITE,
                                                           (WIDTH // 2, HEIGHT // 3))
-
 
         elif current_wave == 3:
             screen.fill(BLACK)
