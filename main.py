@@ -18,6 +18,8 @@ SUMM = 5
 COLLISION_TIME = 3  # Время, которое враг проводит у стенки перед удалением
 BULLET_SPEED = 5
 current_wave = 1  # Первая волна
+final_enemy = {'rect': pygame.Rect(WIDTH - 200, random.randint(50, HEIGHT - 50), 120, 120), 'hp': 10,
+                       'speed': 0.2}
 show_kills = True  # Флаг для отображения количества убийств
 wall_visible = True  # Флаг для отображения стенки
 
@@ -262,7 +264,6 @@ while running:
                     enemy_spawn_interval = random.uniform(2, 3)  # Для второй волны уменьшаем интервал
 
         # update Enemy (движутся right to left)
-        # update Boss (движется к стенке)
         for enemy in enemies[:]:
             enemy_rect = enemy['rect']
             enemy_speed = 0.525  # случайная скорость врагов от 0.5 до 1.0
@@ -293,8 +294,8 @@ while running:
             if enemy_rect.right < 0:
                 enemy_rect.left = WIDTH + enemy_speed * 10  # Возвращаемся плавно, смещая чуть правее края экрана
 
-        # Для босса
-        if current_wave == 3:
+        # После проверки условий для босса
+        if current_wave == 3 and final_enemy is not None and final_enemy['hp'] > 0:
             final_enemy_rect = final_enemy['rect']
             if enemy_rect.colliderect(wall_rect) and wall_visible:
                 enemy_rect.x += 1  # если враг столкнулся с стенкой, не двигается дальше
@@ -303,7 +304,30 @@ while running:
 
             # Рисуем босс (пока он один)
             pygame.draw.rect(screen, RED, final_enemy_rect)
+        elif current_wave == 3:  # Если босса нет, значит игрок победил
+            screen.fill(WHITE)  # Очистка экрана
+            font = pygame.font.Font(None, 72)  # Заголовок шрифтом размером 72
+            text = font.render("YOU WON!", True, BLACK)  # Создаем текст "YOU WON!"
+            text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))  # Центрирование текста
+            screen.blit(text, text_rect)  # Отображение текста на экране
 
+            # Определение положения кнопки
+            button_position = (WIDTH // 2, HEIGHT * 2 // 3)
+            # Вызов функции с передачей всех необходимых аргументов
+            restart_button = show_message_with_buttons(screen, 'Restart', 'Restart',
+                                                       'restart', WHITE, button_position)
+            pygame.display.flip()  # Обновляем экран
+
+            waiting = True
+            while waiting:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                        waiting = False
+                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        if restart_button.collidepoint(event.pos):
+                            reset_game()  # Сбрасываем игру для новой попытки
+                            waiting = False
         # клавиши
         keystate = pygame.key.get_pressed()
 
@@ -345,6 +369,19 @@ while running:
                     SUMM -= 1
                     enemies_killed += 1  # Увеличиваем счетчик убитых врагов
                     break
+                    # проверка столкновения пуль с боссом
+        # проверка столкновения пуль с боссом
+        if current_wave == 3:
+            enemies.append(final_enemy)
+            for bullet in bullets[:]:
+                if bullet.colliderect(final_enemy['rect']):
+                    bullets.remove(bullet)  # Удаляем пулю при попадании
+                    final_enemy['hp'] -= 1  # Уменьшаем здоровье босса
+                    if final_enemy['hp'] <= 0:
+                        # Проверяем, существует ли босс в списке врагов, перед удалением
+                        if final_enemy in enemies:
+                            enemies.remove(final_enemy)
+                        break  # Выход из цикла, чтобы избежать ошибок удаления
 
         # Заполняем экран фоном
         screen.fill(DARK_BLUE)
@@ -361,13 +398,6 @@ while running:
             if current_wave == 2:
                 # Условия второй волны
                 enemy_spawn_interval = random.uniform(3, 4)  # Уменьшаем интервал между врагами, чтобы усложнить игру
-                for _ in range(3):  # Добавляем 3 врага сразу для второй волны
-                    final_enemy = {
-                        'rect': pygame.Rect(WIDTH - 200, random.randint(50, HEIGHT - 50), 120, 120),
-                        'hp': 3,
-                        'time_collided': None,  # Добавляем ключ
-                        'collision_timer': COLLISION_TIME
-                    }
 
             next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Next Wave', 'next', WHITE,
                                                           (WIDTH // 2, HEIGHT // 3))
@@ -399,77 +429,53 @@ while running:
                         if next_level_button.collidepoint(event.pos):
                             reset_game()  # Сбрасываем игру для финальной битвы
                             waiting = False
+            next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Next Wave', 'next', WHITE,
+                                                          (WIDTH // 2, HEIGHT // 3))
         elif current_wave == 3:
-            # Третья волна - финальная битва с боссом
             screen.fill(BLACK)
             # Восстановление здоровья игрока до максимума
             lives = 3
             enemies_killed = 0
-
             # Удаляем всех врагов перед финальной волной
             enemies.clear()
+            final_enemy_rect = final_enemy['rect']
 
-            # Создаем босса
-            final_enemy = {
-                'rect': pygame.Rect(WIDTH - 200, HEIGHT // 2, 120, 120),  # Позиция и размер
-                'hp': 3,
-                'speed': 0.525,  # Скорость движения босса
-                'direction': -1  # Направление движения (влево)
-            }
+            # Устанавливаем начальную позицию босса в центре экрана
+            final_enemy_rect.centery = HEIGHT // 2
 
-            enemies.append(final_enemy)  # Добавляем финального врага в список врагов
-
-            # Основной игровой цикл для этой волны (пока босс не погибнет)
-            while enemies:  # Пока есть враги (босс жив)
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        running = False
-                        break
-
-                # Обновление состояния игры
-                screen.fill(BLACK)
-
-                # Движение босса
-                for enemy in enemies[:]:
-                    enemy_rect = enemy['rect']
-
-                    # Движение влево (по оси X)
-                    enemy_rect.x += enemy['speed'] * enemy['direction']
-
-                    # Если босс столкнулся с границей экрана, меняем его направление
-                    if enemy_rect.left <= 0 or enemy_rect.right >= WIDTH:
-                        enemy['direction'] *= -1  # Меняем направление движения
-
-                    # Рисуем босса
-                    pygame.draw.rect(screen, RED, enemy_rect)
-
-                    # Проверка на столкновение с пулями
-                    for bullet in bullets[:]:
-                        if bullet.colliderect(enemy_rect):
-                            # Пуля уничтожает врага, если у него кончаются очки жизни
-                            enemy['hp'] -= 1
-                            bullets.remove(bullet)  # Удаляем пулю
-
-                            # Если у босса больше нет здоровья
-                            if enemy['hp'] <= 0:
-                                enemies.remove(enemy)
-                                enemies_killed += 1  # Увеличиваем количество убитых врагов
+            boss_speed = 1.2
+            if final_enemy and final_enemy['hp'] > 0:
+                if final_enemy_rect.colliderect(wall_rect) and wall_visible:
+                    final_enemy_rect.x += 1  # Если он сталкивается с стеной, он не двигается дальше
+                else:
+                    final_enemy_rect.x -= boss_speed  # Босс медленно движется влево
+            # Двигаем босса медленно к стенке
+            if final_enemy_rect.colliderect(wall_rect) and wall_visible:
+                final_enemy_rect.x += 1  # Если он сталкивается с стеной, он не двигается дальше
+            else:
+                final_enemy_rect.x -= boss_speed  # Босс медленно движется влево
+            # Проверка столкновения пуль с боссом
+            if current_wave == 3 and final_enemy:
+                # Рисуем босса
+                pygame.draw.rect(screen, RED, final_enemy_rect)  # Добавляем финального врага
+                for bullet in bullets[:]:
+                    if bullet.colliderect(final_enemy['rect']):
+                        bullets.remove(bullet)  # Удаляем пулю при попадании
+                        final_enemy['hp'] -= 1  # Уменьшаем HP босса
+                        print(f"Босс получил урон! Осталось HP: {final_enemy['hp']}")  # Отладочный вывод в консоль
+                        if final_enemy['hp'] <= 0:
+                            final_enemy = None  # Удаляем босса
                             break
 
-                # Отображаем счет убитых врагов (включая босса)
-                font = pygame.font.Font(None, 40)
-                kills_text = font.render(f"Kills: {enemies_killed}", True, WHITE)
-                screen.blit(kills_text, (WIDTH // 2 - 100, 10))
-
-                # Отображение жизней
-                for i in range(lives):
-                    pygame.draw.rect(screen, GREEN, pygame.Rect(10 + i * (life_icon_width + 5), 10, life_icon_width, life_icon_height))
-
-                pygame.display.flip()
-                clock.tick(FPS)
-
-            # Если босс побежден
-            show_final_stats(screen, player_name, enemies_killed)
+            # Отображение HP босса над ним
+            if current_wave == 3 and final_enemy:
+                font = pygame.font.Font(None, 30)
+                hp_text = font.render(f"HP: {final_enemy['hp']}", True, WHITE)
+                screen.blit(hp_text,
+                            (final_enemy['rect'].x + 40, final_enemy['rect'].y - 20))  # Располагаем текст над боссом
+            # next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Final Wave', 'final',
+            #                                              WHITE,
+            #                                              (WIDTH // 2, HEIGHT // 3))
 
         # Рисуем игрока (зеленый квадрат)
         pygame.draw.rect(screen, GREEN, player_rect)
