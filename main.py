@@ -41,6 +41,17 @@ player_animation_index = 0  # Индекс текущего спрайта
 player_animation_timer = 0  # Таймер для анимации
 animation_delay = 45  # Задержка между сменой спрайтов (в кадрах)
 
+# Загрузка спрайтов для пули
+bullet_sprite1 = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\shoot\\shoot1.png")
+bullet_sprite2 = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\shoot\\shoot2.png")
+
+# Преобразуем их в нужный размер
+bullet_sprite1 = pygame.transform.scale(bullet_sprite1, (20, 10))
+bullet_sprite2 = pygame.transform.scale(bullet_sprite2, (20, 10))
+
+# Список спрайтов для анимации пули
+bullet_sprites = [bullet_sprite1, bullet_sprite2]
+
 # Инициализация игры
 pygame.init()
 pygame.mixer.init()
@@ -295,12 +306,28 @@ while running:
             if event.key == pygame.K_ESCAPE:
                 game_active = not game_active
             if event.key == pygame.K_SPACE and game_active:
-                bullet_rect = pygame.Rect(player_rect.right, player_rect.centery - 5, 20, 10)
-                bullets.append(bullet_rect)
+                new_bullet = create_bullet()  # Создание новой пули
+                bullets.append(new_bullet)
 
     if game_active:
         # Таймер для появления врагов
         current_time = time.time()
+        for bullet in bullets[:]:
+            bullet['animation_timer'] += 1
+            if bullet['animation_timer'] >= 5:  # Задержка между сменой спрайтов (в кадрах)
+                bullet['animation_index'] = (bullet['animation_index'] + 1) % len(bullet_sprites)
+                bullet['animation_timer'] = 0  # Сбрасываем таймер
+
+            # Получаем текущий спрайт пули
+            current_bullet_sprite = bullet_sprites[bullet['animation_index']]
+
+            # Двигаем пулю
+            bullet['rect'].x += BULLET_SPEED  # Изменяем x через rect
+            if bullet['rect'].left > WIDTH:
+                bullets.remove(bullet)  # Удаляем пулю, если она выходит за экран
+
+            # Рисуем пулю с анимацией
+            screen.blit(current_bullet_sprite, bullet['rect'])
         # Логика анимации игрока
         player_animation_timer += 1
         if player_animation_timer >= animation_delay:
@@ -446,38 +473,39 @@ while running:
         if player_rect.top < 0:
             player_rect.top = 0
 
-        # обновляем пули
+        # Обновляем пули
         for bullet in bullets[:]:
-            bullet.x += BULLET_SPEED
-            if bullet.left > WIDTH:  # удаляем пули, которые вышли за экран
+            bullet['rect'].x += BULLET_SPEED  # Изменяем позицию пули через 'rect'
+
+            if bullet['rect'].left > WIDTH:  # Удаляем пули, которые вышли за экран
                 bullets.remove(bullet)
 
-        # проверка столкновений пуль с врагами
+        # Проверка столкновений пуль с врагами
         for bullet in bullets[:]:
             for enemy in enemies[:]:
-                if bullet.colliderect(enemy['rect']):
-                    bullets.remove(bullet)
-                    enemies.remove(enemy)
-                    SUMM -= 1
+                if bullet['rect'].colliderect(enemy['rect']):  # Проверяем столкновение с врагом
+                    bullets.remove(bullet)  # Удаляем пулю при попадании
+                    enemies.remove(enemy)  # Удаляем врага
+                    SUMM -= 1  # Уменьшаем счет
                     enemies_killed += 1  # Увеличиваем счетчик убитых врагов
-                    break
-                    # проверка столкновения пуль с боссом
-        # проверка столкновения пуль с боссом
-        if current_wave == 3:
-            enemies.append(final_enemy)
+                    break  # Прерываем цикл, чтобы не удалять несколько врагов за один выстрел
+
+        # Проверка столкновения пуль с боссом (в третьей волне)
+        if current_wave == 3 and final_enemy is not None:
             for bullet in bullets[:]:
-                if bullet.colliderect(final_enemy['rect']):
+                if bullet['rect'].colliderect(final_enemy['rect']):  # Проверяем столкновение с боссом
                     bullets.remove(bullet)  # Удаляем пулю при попадании
                     final_enemy['hp'] -= 1  # Уменьшаем здоровье босса
                     if final_enemy['hp'] <= 0:
-                        # Проверяем, существует ли босс в списке врагов, перед удалением
                         if final_enemy in enemies:
-                            enemies.remove(final_enemy)
-                        break  # Выход из цикла, чтобы избежать ошибок удаления
+                            enemies.remove(final_enemy)  # Удаляем босса, если он погиб
+                    break  # Прерываем цикл, чтобы не удалять несколько пуль за одно попадание
 
         # Заполняем экран фоном
         screen.fill(DARK_BLUE)
-
+        def create_bullet():
+            bullet_rect = pygame.Rect(player_rect.right, player_rect.centery - 5, 20, 10)
+            return {'rect': bullet_rect, 'animation_index': 0, 'animation_timer': 0}
         # Логика движения босса
         def move_boss(final_enemy_rect, wall_rect, wall_visible, boss_speed):
             if final_enemy_rect.colliderect(wall_rect) and wall_visible:
@@ -554,7 +582,7 @@ while running:
 
             # Удаление пуль при попадании
             for bullet in bullets[:]:
-                if bullet.colliderect(final_enemy['rect']):
+                if bullet['rect'].colliderect(final_enemy['rect']):
                     bullets.remove(bullet)  # Удаляем пулю при попадании
                     final_enemy['hp'] -= 1  # Уменьшаем HP босса
                     print(f"Босс получил урон! Осталось HP: {final_enemy['hp']}")  # Отладочный вывод в консоль
@@ -601,8 +629,8 @@ while running:
 
         # Рисуем снаряды (желтые прямоугольники)
         for bullet in bullets:
-            pygame.draw.rect(screen, YELLOW, bullet)
-        pygame.draw.rect(screen, YELLOW, wall_rect)
+            current_bullet_sprite = bullet_sprites[bullet['animation_index']]  # Получаем текущий спрайт пули
+            screen.blit(current_bullet_sprite, bullet['rect'])
 
         # отображение жизней
         for i in range(lives):
