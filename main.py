@@ -52,6 +52,11 @@ bullet_sprite2 = pygame.transform.scale(bullet_sprite2, (20, 10))
 # Список спрайтов для анимации пули
 bullet_sprites = [bullet_sprite1, bullet_sprite2]
 
+# Загрузка спрайта для обычных врагов
+enemy_sprite\
+    = pygame.image.load("C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\asteroids\\asteroid-small.png")
+enemy_sprite = pygame.transform.scale(enemy_sprite, (50, 50))
+
 # Инициализация игры
 pygame.init()
 pygame.mixer.init()
@@ -348,8 +353,11 @@ while running:
                     number_of_enemies_to_spawn = random.randint(3, 4)
 
                 for _ in range(number_of_enemies_to_spawn):
+                    # Создание прямоугольника для врага
                     enemy_rect = pygame.Rect(WIDTH - random.randint(50, 150), random.randint(50, HEIGHT - 50), 40, 40)
-                    enemies.append({'rect': enemy_rect, 'time_collided': None, 'collision_timer': 3})
+                    # Добавление спрайта и других данных в словарь врага
+                    enemy = {'rect': enemy_rect, 'sprite': enemy_sprite, 'time_collided': None, 'collision_timer': 3}
+                    enemies.append(enemy)
 
                 # Обновляем время последнего появления врага
                 last_enemy_spawn_time = current_time
@@ -413,7 +421,7 @@ while running:
             # если враг выходит за экран, возвращаем его в правую часть
             if enemy_rect.right < 0:
                 enemy_rect.left = WIDTH + enemy_speed * 10  # Возвращаемся плавно, смещая чуть правее края экрана
-
+            screen.blit(enemy_sprite, enemy_rect)
         # После проверки условий для босса
         if current_wave == 3 and final_enemy is not None and final_enemy['hp'] > 0:
             final_enemy_rect = final_enemy['rect']
@@ -607,21 +615,18 @@ while running:
 
                 # Определение положения кнопки
                 button_position = (WIDTH // 2, HEIGHT * 2 // 2.5)
-                # Вызов функции с передачей всех необходимых аргументов
-                # restart_button = show_message_with_buttons(screen, 'Restart', 'Restart',
-                #                                            'restart', WHITE, button_position)
-                pygame.display.flip()  # Обновляем экран  # Располагаем текст над боссом
-            # next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Final Wave', 'final',
-            #                                              WHITE,
-            #                                              (WIDTH // 2, HEIGHT // 3))
+                pygame.display.flip()
 
         # рисуем игрока с анимацией
         screen.blit(current_player_sprite, player_rect)  # Используем текущий спрайт игрока
         # Рисуем врагов (красные квадраты)
         for enemy in enemies:
-            pygame.draw.rect(screen, RED, enemy['rect'])
+            if 'sprite' in enemy:  # Если спрайт существует
+                screen.blit(enemy['sprite'], enemy['rect'])  # Отображаем спрайт врага
+            else:
+                pygame.draw.rect(screen, RED, enemy['rect'])  # Временно рисуем прямоугольник, если нет спрайта
 
-            # таймер отображаемый для Enemy
+            # Таймер отображаемый для Enemy
             font = pygame.font.Font(None, 30)
             if 'collision_timer' in enemy:  # Проверяем, есть ли этот ключ у врага
                 timer_text = font.render(f"{int(enemy['collision_timer'])}", True, WHITE)
@@ -645,7 +650,6 @@ while running:
 
         # Отображение текущей волны
         display_wave(screen, current_wave)
-
     else:
         # Если игра на паузе
         screen.fill(BLACK)
