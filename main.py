@@ -19,7 +19,7 @@ COLLISION_TIME = 3  # Время, которое враг проводит у с
 BULLET_SPEED = 5
 current_wave = 1  # Первая волна
 final_enemy = {'rect': pygame.Rect(WIDTH - 200, random.randint(50, HEIGHT - 50), 120, 120), 'hp': 10,
-                       'speed': 0.2}
+                       'speed': 1}
 show_kills = True  # Флаг для отображения количества убийств
 wall_visible = True  # Флаг для отображения стенки
 
@@ -28,17 +28,16 @@ pygame.init()
 pygame.mixer.init()
 
 # Инициализация шрифтов
-pygame.font.init()
-
-# Проверка, что шрифты инициализированы
-if not pygame.font.get_init():
-    raise RuntimeError("Шрифты не инициализированы")
+my_font = 'C:\\Users\\maria\\PycharmProjects\\Space-Blaster\\sprites\\Font\\00218_5X5-B___.ttf'
+pygame.font.Font(my_font,30)
 
 # Создание экрана
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Space Blaster")
 clock = pygame.time.Clock()
 
+# Обновление экрана
+pygame.display.update()
 # Подключение к базе данных SQLite
 conn = sqlite3.connect('records.db')
 cursor = conn.cursor()
@@ -67,10 +66,13 @@ wall_rect = pygame.Rect(WIDTH // 2, 0, 20, HEIGHT)
 life_icon_width = 30  # Добавляем определение переменной
 life_icon_height = 30  # Добавляем определение переменной
 
+def render_text(text, color=(255, 255, 255)):
+    font = pygame.font.Font(my_font, 20)
+    return font.render(text, True, color)
+
 def show_message_with_buttons(screen, message, button_text, button_action, color, position, font_size=40):
     """Отображает сообщение с кнопкой."""
-    font = pygame.font.Font(None, font_size)
-    text = font.render(message, True, color)
+    text = render_text(message)
     text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 3))
     screen.blit(text, text_rect)
 
@@ -83,8 +85,7 @@ def show_message_with_buttons(screen, message, button_text, button_action, color
     pygame.draw.rect(screen, WHITE, button_rect, 3)
 
     # Отображаем текст на кнопке
-    button_font = pygame.font.Font(None, 30)
-    button_text_render = button_font.render(button_text, True, WHITE)
+    button_text_render = render_text(button_text)
     button_text_rect = button_text_render.get_rect(center=button_rect.center)
     screen.blit(button_text_render, button_text_rect)
 
@@ -101,6 +102,31 @@ def reset_game():
     last_enemy_spawn_time = time.time()
     SUMM = 5
 
+def show_game_over(screen):
+    """Отображает экран GAME OVER с кнопкой Restart."""
+    screen.fill(BLACK)
+    font = pygame.font.Font(my_font, 72)
+    text = font.render("GAME OVER", True, WHITE)
+    text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 3.2))  # Центрирование текста
+    screen.blit(text, text_rect)
+
+    # Кнопка перезапуска
+    button_position = (WIDTH // 2, HEIGHT * 2 // 2.5)
+    restart_button = show_message_with_buttons(screen, 'Restart', 'Restart', 'restart', WHITE, button_position)
+    pygame.display.flip()
+
+    # Ожидание нажатия кнопки
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                waiting = False
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if restart_button.collidepoint(event.pos):
+                    reset_game()  # Сбрасываем игру для новой попытки
+                    waiting = False
+
 def save_record(player_name, score):
     """Сохраняет рекорд игрока в базу данных."""
     cursor.execute('INSERT INTO records (player_name, score) VALUES (?, ?)', (player_name, score))
@@ -109,7 +135,7 @@ def save_record(player_name, score):
 def show_high_scores(screen):
     """Отображает таблицу рекордов."""
     screen.fill(BLACK)
-    font = pygame.font.Font(None, 40)
+    font = pygame.font.Font(my_font, 40)
     title_text = font.render('High Scores', True, WHITE)
     screen.blit(title_text, (WIDTH // 2 - 100, 50))
 
@@ -125,7 +151,8 @@ def show_high_scores(screen):
         y_offset += 50
 
     # Кнопка возврата в меню
-    back_button = show_message_with_buttons(screen, '', 'Back', 'back', WHITE, (WIDTH // 2, HEIGHT - 100))
+    back_button = show_message_with_buttons(screen, '', 'Back', 'back', WHITE,
+                                            (WIDTH // 2, HEIGHT - 100))
     pygame.display.flip()
 
     waiting = True
@@ -146,12 +173,12 @@ def get_player_name(screen):
     color = color_inactive
     active = False
     text = ''
-    font = pygame.font.Font(None, 32)
+    font = pygame.font.Font(my_font, 32)
     done = False
 
-    # Отображаем надпись "Please enter your username" по центру
-    font_message = pygame.font.Font(None, 40)
-    message_text = font_message.render("Please enter your username", True, WHITE)
+    # Отображаем надпись "please enter your username" по центру
+    font_message = pygame.font.Font(my_font, 40)
+    message_text = font_message.render("please enter your username", True, WHITE)
     message_text_rect = message_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 10))  # Центрируем надпись
     screen.blit(message_text, message_text_rect)  # Отображаем текст
 
@@ -189,12 +216,30 @@ def get_player_name(screen):
 
     return text
 
+
 def show_final_stats(screen, player_name, kills):
     """Отображает финальную статистику (ник и количество убийств)."""
     screen.fill(BLACK)
-    font = pygame.font.Font(None, 40)
-    stats_text = font.render(f"Player: {player_name}, Kills: {kills}", True, WHITE)
-    screen.blit(stats_text, (WIDTH // 2 - 150, HEIGHT // 2))
+    font = pygame.font.Font(my_font, 30)
+
+    # Создаем текст
+    stats_text1 = font.render(f"Player {player_name}", True, WHITE)
+    stats_text2 = font.render(f"Kills {kills}", True, WHITE)
+
+    # Получаем размеры текстов
+    text1_width, text1_height = stats_text1.get_size()
+    text2_width, text2_height = stats_text2.get_size()
+
+    # Центрируем тексты относительно центра экрана
+    screen_center_x = WIDTH // 2
+    screen_center_y = HEIGHT // 2
+
+    # Рисуем первый текст, с учетом его ширины и высоты
+    screen.blit(stats_text1, (screen_center_x - text1_width // 2, screen_center_y - text1_height // 2))
+
+    # Рисуем второй текст с учетом его ширины и высоты, немного сдвигаем по вертикали
+    screen.blit(stats_text2, (screen_center_x - text2_width // 2, screen_center_y - text2_height // 2 - 50))
+
     pygame.display.flip()
     time.sleep(3)  # Показываем статистику 3 секунды
     screen.fill(BLACK)
@@ -217,7 +262,7 @@ enemies_killed = 0
 
 # Отображение текущей волны
 def display_wave(screen, current_wave):
-    font = pygame.font.Font(None, 40)
+    font = pygame.font.Font(my_font, 30)
     wave_text = font.render(f"WAVE {current_wave}", True, WHITE)
     screen.blit(wave_text, (WIDTH - 150, 10))  # Отображение справа
 
@@ -283,6 +328,29 @@ while running:
                     if lives > 0:
                         lives -= 1
                     enemies.remove(enemy)
+                elif lives == 0:
+                    screen.fill(BLACK)
+                    font = pygame.font.Font(my_font, 72)
+                    text = font.render("GAME OVER", True, WHITE)
+                    text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 3.2))
+                    screen.blit(text, text_rect)
+
+                    # Кнопка для перезапуска игры
+                    button_position = (WIDTH // 2, HEIGHT * 2 // 2.5)
+                    restart_button = show_message_with_buttons(screen, 'Restart', 'Restart', 'restart', WHITE,
+                                                               button_position)
+                    pygame.display.flip()
+
+                    waiting = True
+                    while waiting:
+                        for event in pygame.event.get():
+                            if event.type == pygame.QUIT:
+                                running = False
+                                waiting = False
+                            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                                if restart_button.collidepoint(event.pos):
+                                    reset_game()  # Сбрасываем игру для новой попытки
+                                    waiting = False
 
             # движение врагов (и босса)
             if enemy_rect.colliderect(wall_rect) and wall_visible:
@@ -305,14 +373,14 @@ while running:
             # Рисуем босс (пока он один)
             pygame.draw.rect(screen, RED, final_enemy_rect)
         elif current_wave == 3:  # Если босса нет, значит игрок победил
-            screen.fill(WHITE)  # Очистка экрана
-            font = pygame.font.Font(None, 72)  # Заголовок шрифтом размером 72
-            text = font.render("YOU WON!", True, BLACK)  # Создаем текст "YOU WON!"
-            text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))  # Центрирование текста
+            screen.fill(BLACK)  # Очистка экрана
+            font = pygame.font.Font(my_font, 72)  # Заголовок шрифтом размером 72
+            text = font.render("YOU WON", True, WHITE)  # Создаем текст "YOU WON"
+            text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 3.2))  # Центрирование текста
             screen.blit(text, text_rect)  # Отображение текста на экране
 
             # Определение положения кнопки
-            button_position = (WIDTH // 2, HEIGHT * 2 // 3)
+            button_position = (WIDTH // 2, HEIGHT * 2 // 2.5)
             # Вызов функции с передачей всех необходимых аргументов
             restart_button = show_message_with_buttons(screen, 'Restart', 'Restart',
                                                        'restart', WHITE, button_position)
@@ -386,6 +454,13 @@ while running:
         # Заполняем экран фоном
         screen.fill(DARK_BLUE)
 
+        # Логика движения босса
+        def move_boss(final_enemy_rect, wall_rect, wall_visible, boss_speed):
+            if final_enemy_rect.colliderect(wall_rect) and wall_visible:
+                final_enemy_rect.x += 1  # Если он сталкивается с стеной, он не двигается дальше
+            else:
+                final_enemy_rect.x -= boss_speed  # Босс медленно движется влево
+
         # Проверка условий выигрыша или проигрыша
         if current_wave == 1 and enemies_killed == 6:  # Условие победы в первой волне
             screen.fill(BLACK)
@@ -431,6 +506,7 @@ while running:
                             waiting = False
             next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Next Wave', 'next', WHITE,
                                                           (WIDTH // 2, HEIGHT // 3))
+
         elif current_wave == 3:
             screen.fill(BLACK)
             # Восстановление здоровья игрока до максимума
@@ -438,41 +514,51 @@ while running:
             enemies_killed = 0
             # Удаляем всех врагов перед финальной волной
             enemies.clear()
-            final_enemy_rect = final_enemy['rect']
 
-            # Устанавливаем начальную позицию босса в центре экрана
-            final_enemy_rect.centery = HEIGHT // 2
+            # Убедитесь, что финальный враг существует
+            if final_enemy:
+                final_enemy_rect = final_enemy['rect']
+                final_enemy_rect.centery = HEIGHT // 2
 
-            boss_speed = 1.2
-            if final_enemy and final_enemy['hp'] > 0:
-                if final_enemy_rect.colliderect(wall_rect) and wall_visible:
-                    final_enemy_rect.x += 1  # Если он сталкивается с стеной, он не двигается дальше
-                else:
-                    final_enemy_rect.x -= boss_speed  # Босс медленно движется влево
-            # Двигаем босса медленно к стенке
-            if final_enemy_rect.colliderect(wall_rect) and wall_visible:
-                final_enemy_rect.x += 1  # Если он сталкивается с стеной, он не двигается дальше
-            else:
-                final_enemy_rect.x -= boss_speed  # Босс медленно движется влево
-            # Проверка столкновения пуль с боссом
-            if current_wave == 3 and final_enemy:
-                # Рисуем босса
+                boss_speed = 1  # Устанавливаем скорость босса
+
+                # Перемещаем босса каждый кадр
+                move_boss(final_enemy_rect, wall_rect, wall_visible, boss_speed)
+
+            # Рисуем босса
                 pygame.draw.rect(screen, RED, final_enemy_rect)  # Добавляем финального врага
-                for bullet in bullets[:]:
-                    if bullet.colliderect(final_enemy['rect']):
-                        bullets.remove(bullet)  # Удаляем пулю при попадании
-                        final_enemy['hp'] -= 1  # Уменьшаем HP босса
-                        print(f"Босс получил урон! Осталось HP: {final_enemy['hp']}")  # Отладочный вывод в консоль
-                        if final_enemy['hp'] <= 0:
-                            final_enemy = None  # Удаляем босса
-                            break
+
+            # Удаление пуль при попадании
+            for bullet in bullets[:]:
+                if bullet.colliderect(final_enemy['rect']):
+                    bullets.remove(bullet)  # Удаляем пулю при попадании
+                    final_enemy['hp'] -= 1  # Уменьшаем HP босса
+                    print(f"Босс получил урон! Осталось HP: {final_enemy['hp']}")  # Отладочный вывод в консоль
+                    if final_enemy['hp'] <= 0:
+                        final_enemy = None  # Удаляем босса
+                        break
 
             # Отображение HP босса над ним
             if current_wave == 3 and final_enemy:
                 font = pygame.font.Font(None, 30)
-                hp_text = font.render(f"HP: {final_enemy['hp']}", True, WHITE)
+                hp_text = font.render(f"HP {final_enemy['hp']}", True, WHITE)
                 screen.blit(hp_text,
                             (final_enemy['rect'].x + 40, final_enemy['rect'].y - 20))  # Располагаем текст над боссом
+
+            # Логика завершения уровня
+            if current_wave == 3 and not final_enemy:
+                screen.fill(BLACK)
+                font = pygame.font.Font(my_font, 72)  # Заголовок шрифтом размером 72
+                text = font.render("YOU WON", True, WHITE)  # Создаем текст "YOU WON"
+                text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 3.2))  # Центрирование текста
+                screen.blit(text, text_rect)  # Отображение текста на экране
+
+                # Определение положения кнопки
+                button_position = (WIDTH // 2, HEIGHT * 2 // 2.5)
+                # Вызов функции с передачей всех необходимых аргументов
+                # restart_button = show_message_with_buttons(screen, 'Restart', 'Restart',
+                #                                            'restart', WHITE, button_position)
+                pygame.display.flip()  # Обновляем экран  # Располагаем текст над боссом
             # next_level_button = show_message_with_buttons(screen, 'YOU WIN!', 'Final Wave', 'final',
             #                                              WHITE,
             #                                              (WIDTH // 2, HEIGHT // 3))
@@ -501,19 +587,33 @@ while running:
 
         # Отображение счета убитых врагов (если включен флаг)
         if show_kills:
-            font = pygame.font.Font(None, 40)
-            kills_text = font.render(f"Kills: {enemies_killed}", True, WHITE)
-            screen.blit(kills_text, (WIDTH // 2 - 100, 10))
+            font = pygame.font.Font(my_font, 30)
+            kills_text = font.render(f"KILLS {enemies_killed}", True, WHITE)
+            screen.blit(kills_text, (WIDTH // 2 - 75, 10))
 
         # Отображение текущей волны
         display_wave(screen, current_wave)
 
     else:
-        # если игра на паузе
+        # Если игра на паузе
         screen.fill(BLACK)
-        font = pygame.font.Font(None, 40)
-        text = font.render('PAUSED - Press Esc to resume', True, WHITE)
-        screen.blit(text, (WIDTH // 3.4, HEIGHT // 2.2))
+        font = pygame.font.Font(my_font, 40)
+        text = font.render('PAUSED press ESC to resume', True, WHITE)
+
+        # Получаем размеры текста
+        text_rect = text.get_rect()
+        text_width, text_height = text_rect.width, text_rect.height
+
+        # Центрируем текст по горизонтали
+        center_x = WIDTH // 2
+        text_rect.centerx = center_x
+
+        # Центрируем текст по вертикали
+        center_y = HEIGHT // 2
+        text_rect.centery = center_y
+
+        # Рисуем текст на экране
+        screen.blit(text, text_rect)
 
     pygame.display.flip()
 
