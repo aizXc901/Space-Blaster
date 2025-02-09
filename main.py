@@ -28,7 +28,7 @@ wall_visible = True  # Флаг для отображения стенки
 
 # Создание экрана
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Моя игра")
+pygame.display.set_caption("My game")
 
 # Загрузка и масштабирование фона
 background = pygame.image.load("sprites/background/bg-preview.png")
@@ -77,7 +77,7 @@ pygame.init()
 pygame.mixer.init()
 
 # Инициализация шрифтов
-my_font = 'sprites/Font/00218_5X5-B___.ttf'
+my_font = 'sprites/Font/CommodorePixeled.ttf'
 pygame.font.Font(my_font, 30)
 
 # Создание экрана
@@ -111,7 +111,13 @@ enemy_spawn_interval = random.uniform(4, 5)  # интервал от 4 до 5 с
 # Стенка (вертикальная)
 wall_rect = pygame.Rect(WIDTH // 2, 0, 20, HEIGHT)
 
-# Размер для спрайта жизни
+# Загрузка спрайтов жизни
+full_life_sprite = \
+    pygame.image.load("sprites/player/FullLife.png")
+full_life_icon = pygame.transform.scale(full_life_sprite, (30, 30))  # Масштабируем, чтобы он подходил по размеру
+empty_life_sprite = \
+    pygame.image.load("sprites/player/EmptylLife.png")
+empty_life_icon = pygame.transform.scale(empty_life_sprite, (30, 30))  # Масштабируем, чтобы он подходил по размеру
 life_icon_width = 30  # Добавляем определение переменной
 life_icon_height = 30  # Добавляем определение переменной
 
@@ -195,7 +201,7 @@ def show_high_scores(screen):
     screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, 50))
 
     # Получаем рекорды из базы данных
-    cursor.execute('SELECT player_name, score FROM records ORDER BY score DESC LIMIT 10')
+    cursor.execute('SELECT player_name, score FROM records ORDER BY score DESC LIMIT 5')
     records = cursor.fetchall()
 
     # Отображаем рекорды
@@ -222,7 +228,7 @@ def show_high_scores(screen):
 
 
 def get_player_name(screen):
-    """Получает имя игрока через текстовый ввод."""
+    """Получаем имя игрока через текстовый ввод."""
     input_box = pygame.Rect(WIDTH // 2 - 100, HEIGHT // 2 + 50, 200, 50)  # сдвигаем поле ввода
     color_inactive = pygame.Color('lightskyblue3')
     color_active = pygame.Color('dodgerblue2')
@@ -234,7 +240,7 @@ def get_player_name(screen):
 
     # Отображаем надпись "please enter your username" по центру
     font_message = pygame.font.Font(my_font, 40)
-    message_text = font_message.render("please enter your username", True, WHITE)
+    message_text = font_message.render("Please enter your nickname", True, WHITE)
     message_text_rect = message_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 10))  # Центрируем надпись
     screen.blit(message_text, message_text_rect)  # Отображаем текст
 
@@ -259,7 +265,7 @@ def get_player_name(screen):
                         text += event.unicode
 
         screen.fill(BLACK)
-        # Отображаем надпись снова, чтобы она не исчезала
+        # Отображаем надпись еще р
         screen.blit(message_text, message_text_rect)
 
         txt_surface = font.render(text, True, color)
@@ -279,8 +285,8 @@ def show_final_stats(screen, player_name, kills):
     font = pygame.font.Font(my_font, 30)
 
     # Создаем текст
-    stats_text1 = font.render(f"Player {player_name}", True, WHITE)
-    stats_text2 = font.render(f"Kills {kills}", True, WHITE)
+    stats_text1 = font.render(f"Player: {player_name}", True, WHITE)
+    stats_text2 = font.render(f"Kills: {kills}", True, WHITE)
 
     # Получаем размеры текстов
     text1_width, text1_height = stats_text1.get_size()
@@ -290,10 +296,10 @@ def show_final_stats(screen, player_name, kills):
     screen_center_x = WIDTH // 2
     screen_center_y = HEIGHT // 2
 
-    # Рисуем первый текст, с учетом его ширины и высоты
+    # Рисуем первый текст
     screen.blit(stats_text1, (screen_center_x - text1_width // 2, screen_center_y - text1_height // 2))
 
-    # Рисуем второй текст с учетом его ширины и высоты, немного сдвигаем по вертикали
+    # Рисуем второй текст и немного сдвигаем по вертикали
     screen.blit(stats_text2, (screen_center_x - text2_width // 2, screen_center_y - text2_height // 2 - 50))
 
     pygame.display.flip()
@@ -379,7 +385,6 @@ def main_menu():
 
     while menu_active:
         screen.fill(BLACK)
-        pygame.mixer.Sound("sprites/music/menu_music.ogg")
         font = pygame.font.Font(my_font, 50)
         title_text = font.render("Space Blaster", True, WHITE)
         screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, HEIGHT // 4))
@@ -506,7 +511,7 @@ while running:
                     screen.blit(text, text_rect)
 
                     # Кнопка для перезапуска игры
-                    button_position = (WIDTH // 2, HEIGHT * 2 // 2.5)
+                    button_position = text.get_rect(center=(WIDTH // 2, HEIGHT * 2 // 3.4))
                     restart_button = show_message_with_buttons(screen, '', 'Restart', 'restart', WHITE,
                                                                button_position)
                     pygame.display.flip()
@@ -545,14 +550,13 @@ while running:
             screen.blit(asteroid_sprite, final_enemy_rect)
         elif current_wave == 3:  # Если босса нет, значит игрок победил
             screen.fill(BLACK)  # Очистка экрана
-
-            font = pygame.font.Font(my_font, 36)  # Заголовок шрифтом размером 72
-            text = font.render("YOU WON, CLOSE GAME", True, WHITE)
-            text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 3.2))  # Центрирование текста
+            font = pygame.font.Font(my_font, 36)  # Заголовок шрифтом размером 36
+            text = font.render("YOU WON! CLOSE THE GAME", True, WHITE)
+            text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 3.4))  # Центрирование текста
             screen.blit(text, text_rect)  # Отображение текста на экране
 
             # Определение положения кнопки
-            button_position = (WIDTH // 2, HEIGHT * 2 // 2.5)
+            # button_position = (WIDTH // 2, HEIGHT * 2 // 2.5)
             # Вызов функции с передачей всех необходимых аргументов
             # restart_button = show_message_with_buttons(screen, '', 'Restart',
             # 'restart', WHITE, button_position)
@@ -564,10 +568,10 @@ while running:
                     if event.type == pygame.QUIT:
                         running = False
                         waiting = False
-                    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                        if restart_button.collidepoint(event.pos):
-                            reset_game()  # Сбрасываем игру для новой попытки
-                            waiting = False
+                    # if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                        #     if restart_button.collidepoint(event.pos):
+                        #         reset_game()  # Сбрасываем игру для новой попытки
+                        #         waiting = False
         # клавиши
         keystate = pygame.key.get_pressed()
 
@@ -650,10 +654,10 @@ while running:
                 # Условия второй волны
                 enemy_spawn_interval = random.uniform(3, 4)  # Уменьшаем интервал между врагами, чтобы усложнить игру
 
-            # Кнопка "Next Wave" (опущена ниже)
+            # Кнопка "Next Wave" (опустил ниже)
             next_level_button = show_message_with_buttons(screen,
                                                           f"YOU PASSED WAVE {current_wave - 1}", 'Next Wave',
-                                                          'next', WHITE, (WIDTH // 2, HEIGHT // 2), 40)
+                                                          'next', WHITE, (WIDTH // 2, HEIGHT // 2), 60)
             # Изменено y на HEIGHT // 2
             pygame.display.flip()
             waiting = True
@@ -678,7 +682,7 @@ while running:
             # Кнопка "Next Wave" (опущена ниже)
             next_level_button = show_message_with_buttons(screen,
                                                           f"YOU PASSED WAVE {current_wave - 1}", 'Next Wave',
-                                                          'next', WHITE, (WIDTH // 2, HEIGHT // 2), 40)
+                                                          'next', WHITE, (WIDTH // 2, HEIGHT // 2), 60)
             pygame.display.flip()
             waiting = True
             while waiting:
@@ -712,15 +716,14 @@ while running:
                 if bullet['rect'].colliderect(final_enemy['rect']):
                     bullets.remove(bullet)  # Удаляем пулю при попадании
                     final_enemy['hp'] -= 1  # Уменьшаем HP босса
-                    print(f"Босс получил урон! Осталось HP: {final_enemy['hp']}")  # Отладочный вывод в консоль
+                    # print(f"Босс получил урон! Осталось HP: {final_enemy['hp']}")  # Отладочный вывод в консоль
                     if final_enemy['hp'] <= 0:
                         final_enemy = None  # Удаляем босса
                         break
 
-                # Отображение HP босса над ним
                 if current_wave == 3 and not final_enemy:
                     font = pygame.font.Font(my_font, 36)
-                    text = font.render("YOU WON, CLOSE GAME", True, WHITE)
+                    text = font.render("YOU WON! CLOSE THE GAME", True, WHITE)
                     text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
                     screen.blit(text, text_rect)
                     # Кнопка "Restart"
@@ -741,7 +744,7 @@ while running:
 
         # рисуем игрока с анимацией
         screen.blit(current_player_sprite, player_rect)  # Используем текущий спрайт игрока
-        # Рисуем врагов (красные квадраты)
+        # Рисуем врагов
         for enemy in enemies:
             if 'sprite' in enemy:  # Если спрайт существует
                 screen.blit(enemy['sprite'], enemy['rect'])  # Отображаем спрайт врага
@@ -754,15 +757,17 @@ while running:
                 timer_text = font.render(f"{int(enemy['collision_timer'])}", True, WHITE)
                 screen.blit(timer_text, (enemy['rect'].x + 10, enemy['rect'].y - 20))
 
-        # Рисуем снаряды (желтые прямоугольники)
+        # Рисуем снаряды
         for bullet in bullets:
             current_bullet_sprite = bullet_sprites[bullet['animation_index']]  # Получаем текущий спрайт пули
             screen.blit(current_bullet_sprite, bullet['rect'])
 
-        # отображение жизней
+        # Отображение жизней
         for i in range(lives):
-            pygame.draw.rect(screen, GREEN,
-                             pygame.Rect(10 + i * (life_icon_width + 5), 10, life_icon_width, life_icon_height))
+            if i < lives:  # Если жизнь полная
+                screen.blit(full_life_icon, (10 + i * (life_icon_width + 5), 10))
+            else:  # Если жизнь пустая
+                screen.blit(empty_life_icon, (10 + i * (life_icon_width + 5), 10))
 
         # Отображение счета убитых врагов (если включен флаг)
         if show_kills:
